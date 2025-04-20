@@ -9,7 +9,6 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=64G
 #SBATCH --gres=gpu:1
-##SBATCH --partition=YOUR_PARTITION  # Replace with your cluster's partition
 
 # Set environment variables
 export HOME_ROBOT_ROOT=$(pwd)
