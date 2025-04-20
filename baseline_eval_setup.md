@@ -35,7 +35,7 @@ HomeRobot requires Python 3.9. You'll need to create a conda environment with th
 ```bash
 # Load any required modules on your cluster
 module load anaconda3/2023.9
-module load cudatoolkit/11.7
+module load cudatoolkit/12.6
 
 # For anaconda3/2023.9, set mamba as the default solver
 conda config --set solver libmamba
@@ -55,31 +55,11 @@ conda env update -f src/home_robot_sim/environment.yml
 ```bash
 # Set the HOME_ROBOT_ROOT environment variable
 export HOME_ROBOT_ROOT=$(pwd)
-
-# If CUDA_HOME is not automatically set by your module system:
-export CUDA_HOME=/path/to/cuda-11.7  # Adjust based on your cluster's CUDA installation
 ```
 
-### 4. Set Up Simulation Environment
+### 4. Run the Install Script
 
-The baseline agent evaluation requires the Habitat simulation environment. Set it up with these steps:
-
-```bash
-# Fetch habitat-lab submodule
-git submodule update --init --recursive src/third_party/habitat-lab
-
-# Install habitat-lab, habitat-baselines, and pytorch3d
-python -m pip install -e src/third_party/habitat-lab/habitat-lab
-python -m pip install -e src/third_party/habitat-lab/habitat-baselines
-python -m pip install "git+https://github.com/facebookresearch/pytorch3d.git"
-
-# Install home_robot_sim library
-pip install -e src/home_robot_sim
-```
-
-### 5. Run the Install Script
-
-The install script will download submodules, model checkpoints, and build dependencies:
+The install script will download submodules, model checkpoints, and build dependencies, including setting up the Habitat simulation environment:
 
 ```bash
 # Make sure you're in the home-robot directory with the conda environment activated
@@ -90,6 +70,18 @@ cd $HOME_ROBOT_ROOT
 If you encounter issues with the install script related to CUDA compilation, you may need to:
 1. Check with your cluster administrators about the correct CUDA modules to load
 2. Modify the install script to work with your cluster's environment
+
+### 5. Complete Simulation Setup
+
+After running the install script, complete any remaining simulation setup steps:
+
+```bash
+# Install pytorch3d (if not already installed)
+python -m pip install "git+https://github.com/facebookresearch/pytorch3d.git"
+
+# Install home_robot_sim library
+pip install -e src/home_robot_sim
+```
 
 ### 6. Download Habitat OVMM Data
 

@@ -56,7 +56,7 @@ git lfs install
 echo ""
 if [ "$data_only" = false ]; then
 	echo "Install pinocchio IK dependency"
-	mamba install pinocchio -c conda-forge
+	conda install pinocchio -c conda-forge
 else
 	echo "Skipping pinocchio IK dependency because data_only=$data_only"
 fi
