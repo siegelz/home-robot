@@ -42,7 +42,7 @@ ENV AGENT_EVALUATION_TYPE remote
 ENV LOCAL_ARGS ""
 
 
-# OGN SETUP #
+# =========== OGN SETUP  =========== #
 
 # cmake already installed.
 
@@ -51,7 +51,7 @@ ENV LOCAL_ARGS ""
 RUN /bin/bash -c "git clone https://github.com/roma0615/habitat-sim.git; \
     cd habitat-sim; \
     . activate home-robot; \
-    git checkout tags/v0.2.4; \
+    git checkout cos435_main; \
     pip install -r requirements.txt; \
     python setup.py install --headless --with-cuda --parallel 4"
 
@@ -81,7 +81,9 @@ RUN /bin/bash -c ". activate home-robot; \
 # Install pytorch and torch_scatter
 RUN /bin/bash -c ". activate home-robot; conda install cudatoolkit=11.7 -c pytorch -y; "
 
-# END OGN SETUP #
+# Add datasets to docker container
+
+# =========== END OGN SETUP  =========== #
 
 # clone the thing
 RUN /bin/bash -c "git clone https://github.com/roma0615/Object-Goal-Navigation.git; "

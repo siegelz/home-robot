@@ -27,16 +27,10 @@ done
 
 docker run -it --entrypoint /bin/bash \
       -v $(realpath ../../data):/home-robot/data \
+      -v /data/gibson:/Object-Goal-Navigation/data/scene_datasets/gibson_semantic \
+      -v /data/objectnav:/Object-Goal-Navigation/data/datasets/objectnav \
       --runtime=nvidia \
       --gpus all \
       -e "AGENT_EVALUATION_TYPE=local" \
       -e "LOCAL_ARGS='habitat.dataset.split=${SPLIT}'" \
 	${DOCKER_NAME}
-
-# docker run -it \
-#       -v $(realpath ../../data):/home-robot/data \
-#       --runtime=nvidia \
-#       --gpus all \
-#       -e "AGENT_EVALUATION_TYPE=local" \
-#       -e "LOCAL_ARGS='habitat.dataset.split=${SPLIT}'" \
-#       ${DOCKER_NAME} "$@"
