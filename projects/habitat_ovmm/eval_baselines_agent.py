@@ -18,6 +18,7 @@ from utils.config_utils import (
 from home_robot.agent.ovmm_agent.ovmm_agent import OpenVocabManipAgent
 from home_robot.agent.ovmm_agent.ovmm_exploration_agent import OVMMExplorationAgent
 from home_robot.agent.ovmm_agent.random_agent import RandomAgent
+from home_robot.agent.ovmm_agent.semantic_agent import SemanticAgent
 
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
@@ -55,7 +56,7 @@ if __name__ == "__main__":
         "--agent_type",
         type=str,
         default="baseline",
-        choices=["baseline", "random", "explore"],
+        choices=["baseline", "random", "explore", "semantic"],
         help="Agent to evaluate",
     )
     parser.add_argument(
@@ -104,6 +105,8 @@ if __name__ == "__main__":
         agent = RandomAgent(agent_config, device_id=device_id)
     elif args.agent_type == "explore":
         agent = OVMMExplorationAgent(agent_config, device_id=device_id, args=args)
+    elif args.agent_type == "semantic":
+        agent = SemanticAgent(agent_config, device_id=device_id)
     else:
         agent = OpenVocabManipAgent(agent_config, device_id=device_id)
 
