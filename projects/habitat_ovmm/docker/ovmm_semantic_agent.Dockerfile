@@ -31,7 +31,6 @@ RUN /bin/bash -c "\
 
 # add baseline agent code
 ADD eval_baselines_agent.py /home-robot/projects/habitat_ovmm/agent.py
-ADD semantic_agent.py /home-robot/src/home_robot/home_robot/agent/ovmm_agent/semantic_agent.py
 
 # add submission script
 ADD scripts/submission.sh /home-robot/submission.sh
