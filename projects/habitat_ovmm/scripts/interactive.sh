@@ -27,6 +27,7 @@ done
 
 docker run -it --entrypoint /bin/bash \
       -v $(realpath ../../data):/home-robot/data \
+      -v $(realpath ../../src/home_robot):/home-robot/src/home_robot \
       -v /data/gibson:/Object-Goal-Navigation/data/scene_datasets/gibson_semantic \
       -v /data/objectnav:/Object-Goal-Navigation/data/datasets/objectnav \
       --runtime=nvidia \
