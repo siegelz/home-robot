@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-DOCKER_NAME="ovmm_baseline_submission"
+DOCKER_NAME="ovmm_raz_submission"
 SPLIT="minival"
 
 while [[ $# -gt 0 ]]
@@ -28,6 +28,7 @@ done
 docker run -it --entrypoint /bin/bash \
       -v $(realpath ../../data):/home-robot/data \
       -v $(realpath ../../src/home_robot/home_robot/agent):/home-robot/src/home_robot/home_robot/agent \
+      -v $(realpath ../../projects/habitat_ovmm/configs/env):/home-robot/projects/habitat_ovmm/configs/env \
       -v /data/gibson:/Object-Goal-Navigation/data/scene_datasets/gibson_semantic \
       -v /data/objectnav:/Object-Goal-Navigation/data/datasets/objectnav \
       --runtime=nvidia \
