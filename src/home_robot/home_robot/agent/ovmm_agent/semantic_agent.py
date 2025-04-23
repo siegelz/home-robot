@@ -3,90 +3,65 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
-import numpy as np
+import torch
 
-from home_robot.core.abstract_agent import Agent
-from home_robot.core.interfaces import (
-    ContinuousFullBodyAction,
-    DiscreteNavigationAction,
-    Observations,
-)
+from home_robot.agent.ovmm_agent.ovmm_agent import OpenVocabManipAgent, Skill
+from home_robot.core.interfaces import DiscreteNavigationAction, Observations
 
 
-class SemanticAgent(Agent):
-    """A random agent that takes random discrete or continuous actions."""
+class SemanticAgent(OpenVocabManipAgent):
+    """
+    An agent that extends the OpenVocabManipAgent with custom navigation and exploration
+    capabilities. Currently, it uses the parent class's navigation methods.
+    """
 
     def __init__(self, config, device_id: int = 0):
-        super().__init__()
-        self.config = config
-        self.snap_probability = 5e-3
-        self.desnap_probability = 5e-3
-        self.stop_probability = 0.01
-        self.max_forward = (
-            config.habitat.task.actions.base_velocity.max_displacement_along_axis
-        )
-        self.max_turn_degrees = (
-            config.habitat.task.actions.base_velocity.max_turn_degrees
-        )
-        self.max_turn_radians = self.max_turn_degrees / 180 * np.pi
-        self.max_joints_delta = config.habitat.task.actions.arm_action.max_delta_pos
-        self.discrete_actions = config.AGENT.PLANNER.discrete_actions
-        self.timestep = 0
-        assert (
-            self.snap_probability + self.desnap_probability + self.stop_probability
-            <= 1.0
-        )
+        super().__init__(config, device_id=device_id)
+        print("Initialized the semantic agent with OVMM capabilities!")
         
-        print("Initialized the semantic agent!")
-
-    def reset(self):
-        """Initialize agent state."""
-        self.timestep = 0
-
+        # Add any custom initialization here
+        self.custom_nav_params = getattr(config.AGENT, "CUSTOM_NAV", None)
+        
+    def _nav_to_obj(
+        self, obs: Observations, info: Dict[str, Any]
+    ) -> Tuple[DiscreteNavigationAction, Any, Optional[Skill]]:
+        """
+        Custom navigation to object implementation.
+        Currently just calls the parent class implementation.
+        """
+        # For now, just use the parent class implementation
+        return super()._nav_to_obj(obs, info)
+    
+    def _nav_to_rec(
+        self, obs: Observations, info: Dict[str, Any]
+    ) -> Tuple[DiscreteNavigationAction, Any, Optional[Skill]]:
+        """
+        Custom navigation to receptacle implementation.
+        Currently just calls the parent class implementation.
+        """
+        # For now, just use the parent class implementation
+        return super()._nav_to_rec(obs, info)
+    
+    def _explore(
+        self, obs: Observations, info: Dict[str, Any]
+    ) -> Tuple[DiscreteNavigationAction, Any, Optional[Skill]]:
+        """
+        Custom exploration implementation.
+        This method would be called if the agent is in the EXPLORE state.
+        """
+        # For now, use a simple implementation that calls the navigation method
+        return self._nav_to_obj(obs, info)
+    
     def reset_vectorized(self):
         """Initialize agent state."""
-        self.timestep = 0
-
+        super().reset_vectorized()
+        # Add any custom reset logic here
+        
     def reset_vectorized_for_env(self, e: int):
         """Initialize agent state for a specific environment."""
-        self.timestep = 0
-
-    def act(
-        self, obs: Observations
-    ) -> Tuple[DiscreteNavigationAction, Dict[str, Any], Observations]:
-        """Take a random action."""
-        action = None
-        r = np.random.rand()
-        info = {"timestep": self.timestep, "semantic_frame": obs.rgb}
-        if r < self.snap_probability:
-            action = DiscreteNavigationAction.SNAP_OBJECT
-        elif r < self.snap_probability + self.desnap_probability:
-            action = DiscreteNavigationAction.DESNAP_OBJECT
-        elif (
-            r < self.snap_probability + self.desnap_probability + self.stop_probability
-        ):
-            action = DiscreteNavigationAction.STOP
-        elif self.discrete_actions:
-            action = np.random.choice(
-                [
-                    DiscreteNavigationAction.MOVE_FORWARD,
-                    DiscreteNavigationAction.TURN_LEFT,
-                    DiscreteNavigationAction.TURN_RIGHT,
-                    DiscreteNavigationAction.EXTEND_ARM,
-                    DiscreteNavigationAction.NAVIGATION_MODE,
-                    DiscreteNavigationAction.MANIPULATION_MODE,
-                ]
-            )
-        else:
-            xyt = np.random.uniform(
-                [-self.max_forward, -self.max_forward, -self.max_turn_radians],
-                [self.max_forward, self.max_forward, self.max_turn_radians],
-            )
-            joints = np.random.uniform(
-                -self.max_joints_delta, self.max_joints_delta, size=(10,)
-            )
-            action = ContinuousFullBodyAction(joints, xyt)
-        self.timestep += 1
-        return action, info, obs
+        super().reset_vectorized_for_env(e)
+        # Add any custom reset logic here
+        
+    # You can add more custom methods here as needed
