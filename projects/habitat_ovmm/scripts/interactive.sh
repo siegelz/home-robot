@@ -28,7 +28,9 @@ done
 docker run -it --entrypoint /bin/bash \
       -v $(realpath ../../data):/home-robot/data \
       -v $(realpath ../../src/home_robot/home_robot/agent):/home-robot/src/home_robot/home_robot/agent \
-      -v $(realpath ../../projects/habitat_ovmm/configs/env):/home-robot/projects/habitat_ovmm/configs/env \
+      -v $(realpath ../../src/home_robot/home_robot/ogn):/home-robot/src/home_robot/home_robot/ogn \
+      -v $(realpath ../../projects/habitat_ovmm/configs):/home-robot/projects/habitat_ovmm/configs \
+      -v $(realpath ../../projects/habitat_ovmm/evaluator.py):/home-robot/projects/habitat_ovmm/evaluator.py \
       -v /data/gibson:/Object-Goal-Navigation/data/scene_datasets/gibson_semantic \
       -v /data/objectnav:/Object-Goal-Navigation/data/datasets/objectnav \
       --runtime=nvidia \

@@ -73,7 +73,7 @@ class OpenVocabManipAgent(ObjectNavAgent):
         self.skip_skills = config.AGENT.skip_skills
         self.max_pick_attempts = 100
         if config.GROUND_TRUTH_SEMANTICS == 0:
-            self.semantic_sensor = OvmmPerception(
+            self.semantic_sensor = OvmmPerception( # wrapper around DETIC perception
                 config,
                 device_id,
                 self.verbose,
@@ -407,6 +407,7 @@ class OpenVocabManipAgent(ObjectNavAgent):
     def _nav_to_obj(
         self, obs: Observations, info: Dict[str, Any]
     ) -> Tuple[DiscreteNavigationAction, Any, Optional[Skill]]:
+        """Obs is populated with semantic information"""
         nav_to_obj_type = self.config.AGENT.SKILLS.NAV_TO_OBJ.type
         if self.skip_skills.nav_to_obj:
             terminate = True
@@ -560,7 +561,7 @@ class OpenVocabManipAgent(ObjectNavAgent):
             self._init_episode(obs)
 
         if self.config.GROUND_TRUTH_SEMANTICS == 0:
-            obs = self.semantic_sensor(obs)
+            obs = self.semantic_sensor(obs) # populate obs with semantic information
         else:
             obs.task_observations["semantic_frame"] = None
         info = self._get_info(obs)

@@ -46,5 +46,5 @@ CMD /bin/bash -c "\
     . activate home-robot \
     && cd /home-robot \
     && export PYTHONPATH=/evalai_remote_evaluation:$PYTHONPATH \
-    && bash submission.sh --agent_type semantic $LOCAL_ARGS \
+    && bash submission.sh --agent_type semantic --baseline_config_path projects/habitat_ovmm/configs/agent/semantic_agent.yaml $LOCAL_ARGS \
     "

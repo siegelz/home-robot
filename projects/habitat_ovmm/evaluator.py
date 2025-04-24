@@ -261,6 +261,7 @@ class OVMMEvaluator(PPOTrainer):
         pbar = tqdm(total=num_episodes)
         while count_episodes < num_episodes:
             observations, done = self._env.reset(), False
+            # breakpoint() # check observations?
             current_episode = self._env.get_current_episode()
             agent.reset()
             self._check_set_planner_vis_dir(agent, current_episode)
@@ -272,7 +273,7 @@ class OVMMEvaluator(PPOTrainer):
             current_episode_metrics = {}
             obs_data = [observations]
             while not done:
-                action, info, _ = agent.act(observations)
+                action, info, _ = agent.act(observations) # calling act on an agent given observations
                 observations, done, hab_info = self._env.apply_action(action, info)
                 if self.data_dir:
                     obs_data.append(observations)

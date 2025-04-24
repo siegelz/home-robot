@@ -1,0 +1,96 @@
+habitat:
+  seed: 1
+  simulator:
+    type: Sim-v0
+    seed: ${habitat.seed}
+    agents: {}
+    agents_order: []
+    turn_angle: 30
+    tilt_angle: 30
+    action_space_config: "V1"
+    agent_0:
+      sensors: ['rgb_sensor', 'depth_sensor', 'semantic_sensor']
+      height: 0.88
+      radius: 0.18
+    habitat_sim_v0:
+      gpu_device_id: 0
+      allow_sliding: True
+    semantic_sensor:
+      width: 640
+      height: 480
+      hfov: 79
+      position: [0, 0.88, 0]
+    rgb_sensor:
+      width: 640
+      height: 480
+      hfov: 79
+      position: [0, 0.88, 0]
+    depth_sensor:
+      width: 640
+      height: 480
+      hfov: 79
+      min_depth: 0.5
+      max_depth: 5.0
+      position: [0, 0.88, 0]
+    scene: -1
+  environment:
+    max_episode_steps: 500
+    iterator_options:
+      shuffle: False
+
+ENVIRONMENT:
+  MAX_EPISODE_STEPS: 500
+  ITERATOR_OPTIONS:
+    SHUFFLE: False
+
+SIMULATOR:
+  TURN_ANGLE: 30
+  TILT_ANGLE: 30
+  ACTION_SPACE_CONFIG: "v1"
+  AGENT_0:
+    SENSORS: ['RGB_SENSOR', 'DEPTH_SENSOR', 'SEMANTIC_SENSOR']
+    HEIGHT: 0.88
+    RADIUS: 0.18
+  HABITAT_SIM_V0:
+    GPU_DEVICE_ID: 0
+    ALLOW_SLIDING: True 
+  SEMANTIC_SENSOR:
+    WIDTH: 640
+    HEIGHT: 480
+    HFOV: 79
+    POSITION: [0, 0.88, 0]
+  RGB_SENSOR:
+    WIDTH: 640
+    HEIGHT: 480
+    HFOV: 79
+    POSITION: [0, 0.88, 0]
+  DEPTH_SENSOR:
+    WIDTH: 640
+    HEIGHT: 480
+    HFOV: 79
+    MIN_DEPTH: 0.5
+    MAX_DEPTH: 5.0
+    POSITION: [0, 0.88, 0]
+  SCENE: -1
+
+TASK:
+  TYPE: ObjectNav-v1
+  POSSIBLE_ACTIONS: ["STOP", "MOVE_FORWARD", "TURN_LEFT", "TURN_RIGHT", "LOOK_UP", "LOOK_DOWN"]
+  SENSORS: ['GPS_SENSOR', 'COMPASS_SENSOR']
+  MEASUREMENTS: ['DISTANCE_TO_GOAL', 'SUCCESS', 'SPL']
+  SUCCESS:
+    SUCCESS_DISTANCE: 0.2
+
+DATASET:
+  TYPE: PointNav-v1
+  type: PointNav-v1
+  SPLIT: train
+  split: train
+  CONTENT_SCENES: ["*"]
+  content_scenes: ["*"]
+  DATA_PATH: "data/datasets/objectnav/gibson/v1.1/{split}/{split}.json.gz"
+  data_path: "data/datasets/objectnav/gibson/v1.1/{split}/{split}.json.gz"
+  EPISODES_DIR: "data/datasets/objectnav/gibson/v1/{split}/"
+  episodes_dir: "data/datasets/objectnav/gibson/v1/{split}/"
+  SCENES_DIR: "data/scene_datasets/"
+  scenes_dir: "data/scene_datasets/"
