@@ -86,6 +86,7 @@ if __name__ == "__main__":
 
     # get baseline config
     baseline_config = get_omega_config(args.baseline_config_path)
+    print("BASELINE_CONFIG_PATH:", args.baseline_config_path)
 
     # get env config
     env_config = get_omega_config(args.env_config_path)

@@ -2,6 +2,7 @@
 
 DOCKER_NAME="ovmm_baseline_submission"
 SPLIT="minival"
+BASELINE_CONFIG_PATH="projects/habitat_ovmm/configs/agent/heuristic_agent.yaml"
 
 while [[ $# -gt 0 ]]
 do
@@ -18,6 +19,11 @@ case $key in
       SPLIT="${1}"
       shift
       ;;
+      --baseline_config_path)
+      shift
+      BASELINE_CONFIG_PATH="${1}"
+      shift
+      ;;
     *)
       echo unkown arg ${1}
       exit
@@ -31,10 +37,12 @@ docker run \
       -v $(realpath ../../src/home_robot/home_robot/ogn):/home-robot/src/home_robot/home_robot/ogn \
       -v $(realpath ../../projects/habitat_ovmm/configs):/home-robot/projects/habitat_ovmm/configs \
       -v $(realpath ../../projects/habitat_ovmm/evaluator.py):/home-robot/projects/habitat_ovmm/evaluator.py \
+      -v $(realpath ../../projects/habitat_ovmm/scripts/submission.sh):/home-robot/projects/habitat_ovmm/scripts/submission.sh \
       -v /data/gibson:/Object-Goal-Navigation/data/scene_datasets/gibson_semantic \
       -v /data/objectnav:/Object-Goal-Navigation/data/datasets/objectnav \
       --runtime=nvidia \
       --gpus all \
       -e "AGENT_EVALUATION_TYPE=local" \
+      -e "BASELINE_CONFIG_PATH=${BASELINE_CONFIG_PATH}" \
       -e "LOCAL_ARGS='habitat.dataset.split=${SPLIT}'" \
       ${DOCKER_NAME}
