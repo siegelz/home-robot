@@ -12,8 +12,9 @@ Modify standard PyTorch distributions so they are compatible with this code.
 
 FixedCategorical = torch.distributions.Categorical
 
-old_sample = FixedCategorical.sample
-FixedCategorical.sample = lambda self: old_sample(self)
+# old_sample = FixedCategorical.sample
+# FixedCategorical.sample = lambda self: old_sample(self)
+# FixedCategorical.sample = lambda self, sample_shape=torch.Size([]): old_sample(self, sample_shape)
 
 log_prob_cat = FixedCategorical.log_prob
 FixedCategorical.log_probs = lambda self, actions: \
