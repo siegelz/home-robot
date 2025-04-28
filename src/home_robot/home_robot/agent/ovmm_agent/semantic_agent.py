@@ -488,4 +488,22 @@ class SemanticAgent(OpenVocabManipAgent):
         super().reset_vectorized_for_env(e)
         # Add any custom reset logic here
         
-    # You can add more custom methods here as needed
+    def act(
+        self, obs: Observations
+    ) -> Tuple[DiscreteNavigationAction, Dict[str, Any], Observations]:
+        """
+        Perform an action based on the current observations.
+        This method is called in the main loop of the agent.
+        
+        Args:
+            obs (Observations): The current observations from the environment
+            
+        Returns:
+            Tuple[DiscreteNavigationAction, Dict[str, Any], Observations]: The action to take,
+            additional info, and updated observations
+        """
+        ogn_obs = self._prepare_obs_for_ogn(obs)
+        breakpoint()
+
+        # Call the parent class act method
+        return super().act(obs)
