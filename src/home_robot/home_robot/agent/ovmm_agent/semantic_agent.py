@@ -36,9 +36,25 @@ class SemanticAgent(OpenVocabManipAgent):
 
         print("Initialized the OGN modules for semantic navigation!")
 
+        breakpoint()
+
+        # Store map state
+        self.local_map = None
+        self.local_pose = None
+        self.global_map = None  # Full map
+        self.planner_pose_inputs = None
+        self.origins = None
+        self.lmb = None  # Local map boundaries
+        
+        # Store dimensions
+        self.local_w = None
+        self.local_h = None
+        self.ngc = None  # Number of global channels
+        self.success_dist = config.AGENT.success_distance
+
     def _init_ogn_modules(self):
         """Adapted from OGN's main.py"""
-        args = get_args(['--eval', '1', '--load', '/home-robot/data/ogn/sem_exp.pth', '--total_num_scenes', '1'])
+        args = get_args(['--eval', '1', '--load', '/home-robot/data/ogn/sem_exp.pth', '--total_num_scenes', '1', '--sem_gpu_id', '0'])
         device = args.device = torch.device("cuda:0" if args.cuda else "cpu")
         num_scenes = args.num_processes
 
@@ -313,9 +329,6 @@ class SemanticAgent(OpenVocabManipAgent):
         Currently just calls the parent class implementation.
         Obs is already populated with semantic information
         """
-        # For now, just use the parent class implementation
-        return super()._nav_to_obj(obs, info)
-        # TODO
         if self.skip_skills.nav_to_obj:
             terminate = True
         if self.verbose:
@@ -340,9 +353,115 @@ class SemanticAgent(OpenVocabManipAgent):
         return super()._nav_to_rec(obs, info)
 
     def _ogn_nav(self, obs: Observations, info: Dict[str, Any]) -> Tuple[DiscreteNavigationAction, Any, bool]:
-        # action, info, terminate = self._semantic_nav(obs, info)
+        """
+        Use the OGN semantic navigation to generate navigation actions.
+        Returns: action, info, terminate
+        """
+        # Get observation in OGN format
+        ogn_obs = self._prepare_obs_for_ogn(obs)
         
-        pass
+        # Update the semantic map
+        with torch.no_grad():
+            # Update map with current observation
+            _, self.local_map, _, self.local_pose = self.sem_map_module(
+                ogn_obs['rgbd'], 
+                ogn_obs['pose'], 
+                self.local_map, 
+                self.local_pose
+            )
+        
+        # Prepare global policy input
+        global_input = torch.zeros(1, self.ngc, self.local_w, self.local_h).to(self.device)
+        
+        # Fill in map channels
+        global_input[:, 0:4, :, :] = self.local_map[:, 0:4, :, :].detach()
+        global_input[:, 4:8, :, :] = self.global_map[:, 0:4, :, :]  # Assuming you've defined global_map
+        global_input[:, 8:, :, :] = self.local_map[:, 4:, :, :].detach()
+        
+        # Get goal category from task observations
+        goal_cat_id = torch.tensor([obs.task_observations['goal_cat_id']]).to(self.device)
+        
+        # Get orientation
+        orientation = torch.tensor([
+            int((self.local_pose[0, 2] + 180.0) / 5.)
+        ]).to(self.device)
+        
+        # Prepare extras for policy
+        extras = torch.zeros(1, 2).to(self.device)
+        extras[:, 0] = orientation
+        extras[:, 1] = goal_cat_id
+        
+        # Act using global policy (get long-term goal)
+        with torch.no_grad():
+            _, g_action, _, _ = self.g_policy.act(
+                global_input,
+                self.g_rollouts.rec_states[0],
+                torch.ones(1).to(self.device),  # Masks
+                extras=extras,
+                deterministic=True  # Use deterministic actions during evaluation
+            )
+        
+        # Convert policy output to goal location
+        cpu_actions = torch.sigmoid(g_action).cpu().numpy()
+        global_goal = [
+            int(cpu_actions[0, 0] * self.local_w), 
+            int(cpu_actions[0, 1] * self.local_h)
+        ]
+        global_goal = [
+            min(global_goal[0], int(self.local_w - 1)), 
+            min(global_goal[1], int(self.local_h - 1))
+        ]
+        
+        # Create goal map for local policy
+        goal_map = np.zeros((self.local_w, self.local_h))
+        goal_map[global_goal[0], global_goal[1]] = 1
+        
+        # Check if object is detected in map and prioritize it
+        found_goal = False
+        goal_cat_id_int = int(goal_cat_id.item())
+        cn = goal_cat_id_int + 4  # Category channel in map
+        if self.local_map[0, cn, :, :].sum() != 0:
+            cat_semantic_map = self.local_map[0, cn, :, :].cpu().numpy()
+            cat_semantic_scores = cat_semantic_map.copy()
+            cat_semantic_scores[cat_semantic_scores > 0] = 1.0
+            goal_map = cat_semantic_scores
+            found_goal = True
+        
+        # Prepare planner input (for local policy/path planning)
+        planner_input = {
+            'map_pred': self.local_map[0, 0, :, :].cpu().numpy(),
+            'exp_pred': self.local_map[0, 1, :, :].cpu().numpy(),
+            'pose_pred': self.planner_pose_inputs[0],  # You need to maintain this
+            'goal': goal_map,
+            'found_goal': found_goal
+        }
+        
+        # Local planning to get next action (you'll need to implement this)
+        action = self._local_plan(planner_input)
+        
+        # Determine if we should terminate this skill
+        # Terminate if we've found the goal and are close enough
+        terminate = found_goal and np.linalg.norm(
+            np.array(self.local_pose[0, :2].cpu()) - 
+            np.array(global_goal)
+        ) < self.success_dist
+        
+        # Update info with visualization data if needed
+        info['sem_map_pred'] = self.local_map[0, 4:, :, :].argmax(0).cpu().numpy()
+        info['goal_map'] = goal_map
+        
+        return action, info, terminate
+
+    def _local_plan(self, planner_input: Dict) -> DiscreteNavigationAction:
+        """
+        Local planning to convert goal positions to discrete actions.
+        This is a simplified version - you'll need to implement path planning.
+        """
+        # Implement simple local planning logic
+        # For example, use FMM planning or a similar approach to get to the goal
+        
+        # For now, return a placeholder action
+        return DiscreteNavigationAction.MOVE_FORWARD
     
     def _explore(
         self, obs: Observations, info: Dict[str, Any]

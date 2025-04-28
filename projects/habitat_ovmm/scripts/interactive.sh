@@ -18,6 +18,11 @@ case $key in
       SPLIT="${1}"
       shift
       ;;
+      --baseline_config_path)
+      shift
+      BASELINE_CONFIG_PATH="${1}"
+      shift
+      ;;
     *)
       echo unkown arg ${1}
       exit

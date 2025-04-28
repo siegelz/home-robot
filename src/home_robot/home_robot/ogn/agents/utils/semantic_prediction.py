@@ -58,7 +58,7 @@ def compress_sem_map(sem_map):
 class ImageSegmentation():
     def __init__(self, args):
         string_args = """
-            --config-file configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml
+            --config-file src/home_robot/home_robot/ogn/configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml
             --input input1.jpeg
             --confidence-threshold {}
             --opts MODEL.WEIGHTS

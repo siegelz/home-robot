@@ -248,6 +248,7 @@ def main():
                                       g_action_space, g_policy.rec_state_size,
                                       es).to(device)
 
+    # Load the model
     if args.load != "0":
         print("Loading model {}".format(args.load))
         state_dict = torch.load(args.load,
