@@ -200,7 +200,10 @@ class Semantic_Mapping(nn.Module):
         XYZ_cm_std[..., 2] = XYZ_cm_std[..., 2] / z_resolution
         XYZ_cm_std[..., 2] = (XYZ_cm_std[..., 2] -
                               (max_h + min_h) // 2.) / (max_h - min_h) * 2.
-        self.feat[:, 1:, :] = nn.AvgPool2d(self.du_scale)(
+        # torch.Size([1, 16, 640, 480])
+        # self.feat.shape = 4, 17, 19200
+        # but the view becomes 1, 16, 19200*4
+        self.feat[:, 1:, :] = nn.AvgPool2d(self.du_scale)( # 120 x 160 , 480 x 640
             obs[:, 4:, :, :]
         ).view(bs, c - 4, h // self.du_scale * w // self.du_scale)
 

@@ -10,8 +10,8 @@ import torch
 
 from home_robot.agent.ovmm_agent.ovmm_agent import OpenVocabManipAgent, Skill
 from home_robot.core.interfaces import DiscreteNavigationAction, Observations
-from home_robot.ogn.agents.utils.semantic_prediction import SemanticPredMaskRCNN
 
+from home_robot.ogn.agents.utils.semantic_prediction import SemanticPredMaskRCNN
 from home_robot.ogn.model import RL_Policy, Semantic_Mapping 
 from home_robot.ogn.utils.storage import GlobalRolloutStorage
 from home_robot.ogn.arguments import get_args
@@ -38,7 +38,14 @@ class SemanticAgent(OpenVocabManipAgent):
 
     def _init_ogn_modules(self, config):
         """Adapted from OGN's main.py"""
-        args = get_args(['--eval', '1', '--load', '/home-robot/data/ogn/sem_exp.pth', '--total_num_scenes', '1', '--sem_gpu_id', '0'])
+        args = get_args([
+            '--eval', '1',
+            '--load', '/home-robot/data/ogn/sem_exp.pth',
+            '--total_num_scenes', '1',
+            '--sem_gpu_id', '0',
+        ])
+        self.args = args
+        args.num_processes = 1 # hardcoded override
         device = args.device = torch.device("cuda:0" if args.cuda else "cpu")
         num_scenes = args.num_processes
 
@@ -54,17 +61,17 @@ class SemanticAgent(OpenVocabManipAgent):
         # Calculating full and local map sizes
         map_size = args.map_size_cm // args.map_resolution
         full_w, full_h = map_size, map_size
-        local_w = int(full_w / args.global_downscaling)
-        local_h = int(full_h / args.global_downscaling)
+        self.local_w = int(full_w / args.global_downscaling)
+        self.local_h = int(full_h / args.global_downscaling)
 
         # Initializing full and local map
-        full_map = torch.zeros(num_scenes, nc, full_w, full_h).float().to(device)
-        local_map = torch.zeros(num_scenes, nc, local_w,
-                                local_h).float().to(device)
+        self.full_map = torch.zeros(num_scenes, nc, full_w, full_h).float().to(device)
+        self.local_map = torch.zeros(num_scenes, nc, self.local_w,
+                                self.local_h).float().to(device)
 
         # Initial full and local pose
-        full_pose = torch.zeros(num_scenes, 3).float().to(device)
-        local_pose = torch.zeros(num_scenes, 3).float().to(device)
+        self.full_pose = torch.zeros(num_scenes, 3).float().to(device)
+        self.local_pose = torch.zeros(num_scenes, 3).float().to(device)
 
         # Origin of local map
         origins = np.zeros((num_scenes, 3))
@@ -75,7 +82,7 @@ class SemanticAgent(OpenVocabManipAgent):
         # Planner pose inputs has 7 dimensions
         # 1-3 store continuous global agent location
         # 4-7 store local map boundaries
-        planner_pose_inputs = np.zeros((num_scenes, 7))
+        self.planner_pose_inputs = np.zeros((num_scenes, 7))
 
         def get_local_map_boundaries(agent_loc, local_sizes, full_sizes):
             loc_r, loc_c = agent_loc
@@ -100,76 +107,76 @@ class SemanticAgent(OpenVocabManipAgent):
             return [gx1, gx2, gy1, gy2]
 
         def init_map_and_pose():
-            full_map.fill_(0.)
-            full_pose.fill_(0.)
-            full_pose[:, :2] = args.map_size_cm / 100.0 / 2.0
+            self.full_map.fill_(0.)
+            self.full_pose.fill_(0.)
+            self.full_pose[:, :2] = args.map_size_cm / 100.0 / 2.0
 
-            locs = full_pose.cpu().numpy()
-            planner_pose_inputs[:, :3] = locs
+            locs = self.full_pose.cpu().numpy()
+            self.planner_pose_inputs[:, :3] = locs
             for e in range(num_scenes):
                 r, c = locs[e, 1], locs[e, 0]
                 loc_r, loc_c = [int(r * 100.0 / args.map_resolution),
                                 int(c * 100.0 / args.map_resolution)]
 
-                full_map[e, 2:4, loc_r - 1:loc_r + 2, loc_c - 1:loc_c + 2] = 1.0
+                self.full_map[e, 2:4, loc_r - 1:loc_r + 2, loc_c - 1:loc_c + 2] = 1.0
 
                 lmb[e] = get_local_map_boundaries((loc_r, loc_c),
-                                                (local_w, local_h),
+                                                (self.local_w, self.local_h),
                                                 (full_w, full_h))
 
-                planner_pose_inputs[e, 3:] = lmb[e]
+                self.planner_pose_inputs[e, 3:] = lmb[e]
                 origins[e] = [lmb[e][2] * args.map_resolution / 100.0,
                             lmb[e][0] * args.map_resolution / 100.0, 0.]
 
             for e in range(num_scenes):
-                local_map[e] = full_map[e, :,
+                self.local_map[e] = self.full_map[e, :,
                                         lmb[e, 0]:lmb[e, 1],
                                         lmb[e, 2]:lmb[e, 3]]
-                local_pose[e] = full_pose[e] - \
+                self.local_pose[e] = self.full_pose[e] - \
                     torch.from_numpy(origins[e]).to(device).float()
 
         def init_map_and_pose_for_env(e):
-            full_map[e].fill_(0.)
-            full_pose[e].fill_(0.)
-            full_pose[e, :2] = args.map_size_cm / 100.0 / 2.0
+            self.full_map[e].fill_(0.)
+            self.full_pose[e].fill_(0.)
+            self.full_pose[e, :2] = args.map_size_cm / 100.0 / 2.0
 
-            locs = full_pose[e].cpu().numpy()
-            planner_pose_inputs[e, :3] = locs
+            locs = self.full_pose[e].cpu().numpy()
+            self.planner_pose_inputs[e, :3] = locs
             r, c = locs[1], locs[0]
             loc_r, loc_c = [int(r * 100.0 / args.map_resolution),
                             int(c * 100.0 / args.map_resolution)]
 
-            full_map[e, 2:4, loc_r - 1:loc_r + 2, loc_c - 1:loc_c + 2] = 1.0
+            self.full_map[e, 2:4, loc_r - 1:loc_r + 2, loc_c - 1:loc_c + 2] = 1.0
 
             lmb[e] = get_local_map_boundaries((loc_r, loc_c),
-                                            (local_w, local_h),
+                                            (self.local_w, self.local_h),
                                             (full_w, full_h))
 
-            planner_pose_inputs[e, 3:] = lmb[e]
+            self.planner_pose_inputs[e, 3:] = lmb[e]
             origins[e] = [lmb[e][2] * args.map_resolution / 100.0,
                         lmb[e][0] * args.map_resolution / 100.0, 0.]
 
-            local_map[e] = full_map[e, :, lmb[e, 0]:lmb[e, 1], lmb[e, 2]:lmb[e, 3]]
-            local_pose[e] = full_pose[e] - \
+            self.local_map[e] = self.full_map[e, :, lmb[e, 0]:lmb[e, 1], lmb[e, 2]:lmb[e, 3]]
+            self.local_pose[e] = self.full_pose[e] - \
                 torch.from_numpy(origins[e]).to(device).float()
 
         def update_intrinsic_rew(e):
-            prev_explored_area = full_map[e, 1].sum(1).sum(0)
-            full_map[e, :, lmb[e, 0]:lmb[e, 1], lmb[e, 2]:lmb[e, 3]] = \
-                local_map[e]
-            curr_explored_area = full_map[e, 1].sum(1).sum(0)
+            prev_explored_area = self.full_map[e, 1].sum(1).sum(0)
+            self.full_map[e, :, lmb[e, 0]:lmb[e, 1], lmb[e, 2]:lmb[e, 3]] = \
+                self.local_map[e]
+            curr_explored_area = self.full_map[e, 1].sum(1).sum(0)
             intrinsic_rews[e] = curr_explored_area - prev_explored_area
             intrinsic_rews[e] *= (args.map_resolution / 100.)**2  # to m^2
 
         init_map_and_pose()
 
         # Global policy observation space
-        ngc = 8 + args.num_sem_categories
+        self.ngc = 8 + args.num_sem_categories
         es = 2
         g_observation_space = gym.spaces.Box(0, 1,
-                                            (ngc,
-                                            local_w,
-                                            local_h), dtype='uint8')
+                                            (self.ngc,
+                                            self.local_w,
+                                            self.local_h), dtype='uint8')
 
         # Global policy action space
         g_action_space = gym.spaces.Box(low=0.0, high=0.99,
@@ -187,7 +194,7 @@ class SemanticAgent(OpenVocabManipAgent):
                             model_type=1,
                             base_kwargs={'recurrent': args.use_recurrent_global,
                                         'hidden_size': g_hidden_size,
-                                        'num_sem_categories': ngc - 8
+                                        'num_sem_categories': self.ngc - 8
                                         }).to(device)
         self.g_agent = algo.PPO(self.g_policy, args.clip_param, args.ppo_epoch,
                         args.num_mini_batch, args.value_loss_coef,
@@ -217,19 +224,19 @@ class SemanticAgent(OpenVocabManipAgent):
         else:
             assert False, "Must be in eval mode"
 
-        # Store map state
-        self.local_map = None
-        self.local_pose = None
-        self.global_map = None  # Full map
-        self.planner_pose_inputs = None
-        self.origins = None
-        self.lmb = None  # Local map boundaries
+        # # Store map state
+        # self.local_map = None
+        # self.local_pose = None
+        # self.global_map = None  # Full map
+        # self.planner_pose_inputs = None
+        # self.origins = None
+        # self.lmb = None  # Local map boundaries
         
-        # Store dimensions
-        self.local_w = None
-        self.local_h = None
-        self.ngc = None  # Number of global channels
-        self.success_dist = config.AGENT.SKILLS.NAV_TO_OBJ.success_distance # TODO pick nav to obj or nav to rec?
+        # # Store dimensions
+        # self.local_w = None
+        # self.local_h = None
+        # self.ngc = None  # Number of global channels
+        # self.success_dist = config.AGENT.SKILLS.NAV_TO_OBJ.success_distance # TODO pick nav to obj or nav to rec?
         
     def _prepare_obs_for_ogn(self, obs: Observations) -> torch.Tensor:
         """
@@ -254,6 +261,7 @@ class SemanticAgent(OpenVocabManipAgent):
         
         # Get semantic predictions using the same method as in sem_exp.py
         sem_seg_pred = self._get_sem_pred(rgb)
+        # TODO convert homerobot's obs.semantic into OGN's format
         
         # Expand depth to have a channel dimension
         depth_processed = np.expand_dims(depth_processed, axis=2)
@@ -267,13 +275,19 @@ class SemanticAgent(OpenVocabManipAgent):
         # Convert to PyTorch tensor
         state_tensor = torch.from_numpy(state).float()
         state_tensor = state_tensor.to(self.device).unsqueeze(0) # unsqueeze to add batch_size dimension
+        # Downsample to 120 x 160
+        state_tensor = torch.nn.functional.interpolate(
+            state_tensor, scale_factor=0.25, mode='bilinear', align_corners=False
+        )
 
         # Get sensor pose in the format expected by sem_map_module
         # Assuming pose is available in observations or info
         pose = torch.from_numpy(
             np.array([*obs.gps, 0])  # [x, y, orientation]
         ).float().to(self.device).unsqueeze(0)
-        
+
+        breakpoint()
+
         return state_tensor, pose
         
     def _preprocess_depth(self, depth, min_d, max_d):
@@ -380,10 +394,12 @@ class SemanticAgent(OpenVocabManipAgent):
         
         # Fill in map channels
         global_input[:, 0:4, :, :] = self.local_map[:, 0:4, :, :].detach()
-        global_input[:, 4:8, :, :] = self.global_map[:, 0:4, :, :]  # Assuming you've defined global_map
+        global_input[:, 4:8, :, :] = torch.nn.MaxPool2d(self.args.global_downscaling)(
+            self.full_map[:, 0:4, :, :])
         global_input[:, 8:, :, :] = self.local_map[:, 4:, :, :].detach()
         
         # Get goal category from task observations
+        # TODO change to object_goal
         goal_cat_id = torch.tensor([obs.task_observations['goal_cat_id']]).to(self.device)
         
         # Get orientation
@@ -455,6 +471,7 @@ class SemanticAgent(OpenVocabManipAgent):
         info['sem_map_pred'] = self.local_map[0, 4:, :, :].argmax(0).cpu().numpy()
         info['goal_map'] = goal_map
         
+        # TODO check what this action is - does it even work lol
         return action, info, terminate
 
     def _local_plan(self, planner_input: Dict) -> DiscreteNavigationAction:
@@ -502,8 +519,6 @@ class SemanticAgent(OpenVocabManipAgent):
             Tuple[DiscreteNavigationAction, Dict[str, Any], Observations]: The action to take,
             additional info, and updated observations
         """
-        ogn_obs = self._prepare_obs_for_ogn(obs)
-        breakpoint()
 
         # Call the parent class act method
         return super().act(obs)
