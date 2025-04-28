@@ -213,6 +213,14 @@ class SemanticAgent(OpenVocabManipAgent):
             self.g_policy.eval()
         else:
             assert False, "Must be in eval mode"
+        
+    # TODO change the return type from any
+    def _prepare_obs_for_ogn(self, obs: Observations) -> any:
+        """
+        Convert the observation object that HomeRobot uses into 
+        the format used by the semantic navigation paper.
+        """
+        pass
 
     # TODO OVERRIDE
     def _nav_to_obj(
