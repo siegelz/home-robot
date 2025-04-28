@@ -27,14 +27,18 @@ done
 
 docker run -it --entrypoint /bin/bash \
       -v $(realpath ../../data):/home-robot/data \
+      -v $(realpath ../../datadump):/home-robot/datadump \
+      -v $(realpath ../../video_dir):/home-robot/video_dir \
       -v $(realpath ../../src/home_robot/home_robot/agent):/home-robot/src/home_robot/home_robot/agent \
       -v $(realpath ../../src/home_robot/home_robot/ogn):/home-robot/src/home_robot/home_robot/ogn \
       -v $(realpath ../../projects/habitat_ovmm/configs):/home-robot/projects/habitat_ovmm/configs \
       -v $(realpath ../../projects/habitat_ovmm/evaluator.py):/home-robot/projects/habitat_ovmm/evaluator.py \
+      -v $(realpath ../../projects/habitat_ovmm/scripts/submission.sh):/home-robot/projects/habitat_ovmm/scripts/submission.sh \
       -v /data/gibson:/Object-Goal-Navigation/data/scene_datasets/gibson_semantic \
       -v /data/objectnav:/Object-Goal-Navigation/data/datasets/objectnav \
       --runtime=nvidia \
       --gpus all \
       -e "AGENT_EVALUATION_TYPE=local" \
+      -e "BASELINE_CONFIG_PATH=${BASELINE_CONFIG_PATH}" \
       -e "LOCAL_ARGS='habitat.dataset.split=${SPLIT}'" \
 	${DOCKER_NAME}

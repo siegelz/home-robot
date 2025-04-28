@@ -33,6 +33,8 @@ done
 
 docker run \
       -v $(realpath ../../data):/home-robot/data \
+      -v $(realpath ../../datadump):/home-robot/datadump \
+      -v $(realpath ../../video_dir):/home-robot/video_dir \
       -v $(realpath ../../src/home_robot/home_robot/agent):/home-robot/src/home_robot/home_robot/agent \
       -v $(realpath ../../src/home_robot/home_robot/ogn):/home-robot/src/home_robot/home_robot/ogn \
       -v $(realpath ../../projects/habitat_ovmm/configs):/home-robot/projects/habitat_ovmm/configs \
