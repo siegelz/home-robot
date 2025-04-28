@@ -217,13 +217,92 @@ class SemanticAgent(OpenVocabManipAgent):
         else:
             assert False, "Must be in eval mode"
         
-    # TODO change the return type from any
-    def _prepare_obs_for_ogn(self, obs: Observations) -> any:
+    def _prepare_obs_for_ogn(self, obs: Observations) -> torch.Tensor:
         """
         Convert the observation object that HomeRobot uses into 
         the format used by the semantic navigation paper.
+        
+        Args:
+            obs (Observations): HomeRobot observation object
+            
+        Returns:
+            torch.Tensor: Observation tensor in the format expected by OGN (C, H, W)
         """
-        pass
+        # Extract RGB and depth from the Observations object
+        rgb = obs.rgb  # Shape: (H, W, 3)
+        depth = obs.depth  # Shape: (H, W)
+        
+        # Ensure RGB is in the correct format (uint8)
+        rgb = rgb.astype(np.uint8)
+        
+        # Process depth similar to _preprocess_depth in Sem_Exp_Env_Agent
+        depth_processed = self._preprocess_depth(depth, min_d=0.5, max_d=5.0)
+        
+        # Get semantic predictions using the same method as in sem_exp.py
+        sem_seg_pred = self._get_sem_pred(rgb)
+        
+        # Expand depth to have a channel dimension
+        depth_processed = np.expand_dims(depth_processed, axis=2)
+        
+        # Concatenate RGB, processed depth, and semantic predictions along the channel dimension
+        combined = np.concatenate((rgb, depth_processed, sem_seg_pred), axis=2)  # Shape: (H, W, 4+16)
+        
+        # Transpose to get (C, H, W) format as expected by the model
+        state = combined.transpose(2, 0, 1)  # Shape: (20, H, W)
+        
+        # Convert to PyTorch tensor
+        state_tensor = torch.from_numpy(state).float()
+        
+        return state_tensor
+        
+    def _preprocess_depth(self, depth, min_d, max_d):
+        """
+        Process depth information to match the format expected by the model.
+        This is the same as the _preprocess_depth method in Sem_Exp_Env_Agent.
+        
+        Args:
+            depth (np.ndarray): Raw depth array of shape (H, W) or (H, W, 1)
+            min_d (float): Minimum depth value
+            max_d (float): Maximum depth value
+            
+        Returns:
+            np.ndarray: Processed depth array of shape (H, W)
+        """
+        # Make sure we're working with a 2D array
+        if depth.ndim == 3:
+            depth = depth[:, :, 0]
+        else:
+            depth = depth.copy()
+        
+        # Apply the same processing as in Sem_Exp_Env_Agent._preprocess_depth
+        for i in range(depth.shape[1]):
+            depth[:, i][depth[:, i] == 0.] = depth[:, i].max()
+        
+        mask2 = depth > 0.99
+        depth[mask2] = 0.
+        
+        mask1 = depth == 0
+        depth[mask1] = 100.0
+        
+        depth = min_d * 100.0 + depth * max_d * 100.0
+        return depth
+        
+    def _get_sem_pred(self, rgb):
+        """
+        Get semantic predictions for the RGB image.
+        This uses the same approach as Sem_Exp_Env_Agent._get_sem_pred.
+        
+        Args:
+            rgb (np.ndarray): RGB image of shape (H, W, 3)
+            
+        Returns:
+            np.ndarray: Semantic predictions of shape (H, W, 16)
+        """
+        # Get semantic predictions using the semantic prediction model
+        semantic_pred, _ = self.sem_pred.get_prediction(rgb)
+        semantic_pred = semantic_pred.astype(np.float32)
+        
+        return semantic_pred
 
     # TODO OVERRIDE
     def _nav_to_obj(
