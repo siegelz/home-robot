@@ -10,6 +10,7 @@ import torch
 
 from home_robot.agent.ovmm_agent.ovmm_agent import OpenVocabManipAgent, Skill
 from home_robot.core.interfaces import DiscreteNavigationAction, Observations
+from home_robot.ogn.agents.utils.semantic_prediction import SemanticPredMaskRCNN
 
 from home_robot.ogn.model import RL_Policy, Semantic_Mapping 
 from home_robot.ogn.utils.storage import GlobalRolloutStorage
@@ -192,6 +193,8 @@ class SemanticAgent(OpenVocabManipAgent):
                         args.num_mini_batch, args.value_loss_coef,
                         args.entropy_coef, lr=args.lr, eps=args.eps,
                         max_grad_norm=args.max_grad_norm)
+
+        self.sem_pred = SemanticPredMaskRCNN(args)
 
         intrinsic_rews = torch.zeros(num_scenes).to(device)
 
