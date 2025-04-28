@@ -32,27 +32,11 @@ class SemanticAgent(OpenVocabManipAgent):
         # Add any custom initialization here
         self.custom_nav_params = getattr(config.AGENT, "CUSTOM_NAV", None)
 
-        self._init_ogn_modules()
+        self._init_ogn_modules(config)
 
         print("Initialized the OGN modules for semantic navigation!")
 
-        breakpoint()
-
-        # Store map state
-        self.local_map = None
-        self.local_pose = None
-        self.global_map = None  # Full map
-        self.planner_pose_inputs = None
-        self.origins = None
-        self.lmb = None  # Local map boundaries
-        
-        # Store dimensions
-        self.local_w = None
-        self.local_h = None
-        self.ngc = None  # Number of global channels
-        self.success_dist = config.AGENT.success_distance
-
-    def _init_ogn_modules(self):
+    def _init_ogn_modules(self, config):
         """Adapted from OGN's main.py"""
         args = get_args(['--eval', '1', '--load', '/home-robot/data/ogn/sem_exp.pth', '--total_num_scenes', '1', '--sem_gpu_id', '0'])
         device = args.device = torch.device("cuda:0" if args.cuda else "cpu")
@@ -232,6 +216,20 @@ class SemanticAgent(OpenVocabManipAgent):
             self.g_policy.eval()
         else:
             assert False, "Must be in eval mode"
+
+        # Store map state
+        self.local_map = None
+        self.local_pose = None
+        self.global_map = None  # Full map
+        self.planner_pose_inputs = None
+        self.origins = None
+        self.lmb = None  # Local map boundaries
+        
+        # Store dimensions
+        self.local_w = None
+        self.local_h = None
+        self.ngc = None  # Number of global channels
+        self.success_dist = config.AGENT.SKILLS.NAV_TO_OBJ.success_distance # TODO pick nav to obj or nav to rec?
         
     def _prepare_obs_for_ogn(self, obs: Observations) -> torch.Tensor:
         """
@@ -268,8 +266,15 @@ class SemanticAgent(OpenVocabManipAgent):
         
         # Convert to PyTorch tensor
         state_tensor = torch.from_numpy(state).float()
+        state_tensor = state_tensor.to(self.device).unsqueeze(0) # unsqueeze to add batch_size dimension
+
+        # Get sensor pose in the format expected by sem_map_module
+        # Assuming pose is available in observations or info
+        pose = torch.from_numpy(
+            np.array([*obs.gps, 0])  # [x, y, orientation]
+        ).float().to(self.device).unsqueeze(0)
         
-        return state_tensor
+        return state_tensor, pose
         
     def _preprocess_depth(self, depth, min_d, max_d):
         """
@@ -358,14 +363,14 @@ class SemanticAgent(OpenVocabManipAgent):
         Returns: action, info, terminate
         """
         # Get observation in OGN format
-        ogn_obs = self._prepare_obs_for_ogn(obs)
+        rgbd, pose = self._prepare_obs_for_ogn(obs)
         
         # Update the semantic map
         with torch.no_grad():
             # Update map with current observation
             _, self.local_map, _, self.local_pose = self.sem_map_module(
-                ogn_obs['rgbd'], 
-                ogn_obs['pose'], 
+                rgbd,
+                pose,
                 self.local_map, 
                 self.local_pose
             )
