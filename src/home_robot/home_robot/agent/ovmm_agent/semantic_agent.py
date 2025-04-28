@@ -31,9 +31,9 @@ class SemanticAgent(OpenVocabManipAgent):
         # Add any custom initialization here
         self.custom_nav_params = getattr(config.AGENT, "CUSTOM_NAV", None)
 
-        # self._init_ogn_modules()
+        self._init_ogn_modules()
 
-        print("GROUND TRUTH SEMANTICS: ", self.config.GROUND_TRUTH_SEMANTICS)
+        print("Initialized the OGN modules for semantic navigation!")
 
     def _init_ogn_modules(self):
         """Adapted from OGN's main.py"""
@@ -213,7 +213,6 @@ class SemanticAgent(OpenVocabManipAgent):
             self.g_policy.eval()
         else:
             assert False, "Must be in eval mode"
-
 
     # TODO OVERRIDE
     def _nav_to_obj(

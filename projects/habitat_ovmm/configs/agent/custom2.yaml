@@ -125,11 +125,11 @@ SKILLS:
 
 
   PLACE:
-    type: rl # "rl" or "heuristic" or "hardcoded"
+    type: heuristic # "rl" or "heuristic" or "hardcoded"
     checkpoint_path: data/checkpoints/ovmm_baseline_home_robot_challenge_2023_v0.2/place.pth
     rl_config: projects/habitat_ovmm/configs/agent/skills/place_rl.yaml # with continuous actions
     gym_obs_keys:
-      - head_depth
+      - robot_head_depth
       - goal_receptacle
       - joint
       - goal_recep_segmentation
@@ -150,7 +150,7 @@ SKILLS:
     terminate_condition: ungrip
     grip_threshold: -0.8
     manip_mode_threshold: 0.8
-    constraint_base_in_manip_mode: False
+    constraint_base_in_manip_mode: True
     max_joint_delta: 0.1
     min_joint_delta: 0.02
 
@@ -172,4 +172,4 @@ PLANNER:
   map_downsample_factor: 1            # optional downsampling of traversible and goal map before fmm distance call (1 for no downsampling, 2 for halving resolution)
   map_update_frequency: 1             # compute fmm distance map every n steps 
   discrete_actions: True         # discrete motion planner output space or not
-  verbose: True                 # display debug information during planning
+  verbose: False                 # display debug information during planning
