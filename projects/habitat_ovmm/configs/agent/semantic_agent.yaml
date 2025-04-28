@@ -93,6 +93,7 @@ SKILLS:
     discrete_turn_degrees: 10
     sensor_width: 120
     terminate_condition: discrete_stop
+    success_distance: 0.5
     nav_goal_seg_channels: 2
 
   NAV_TO_REC:
@@ -124,6 +125,7 @@ SKILLS:
     sensor_height: 160
     sensor_width: 120
     terminate_condition: discrete_stop
+    success_distance: 0.5
     nav_goal_seg_channels: 1
 
 
