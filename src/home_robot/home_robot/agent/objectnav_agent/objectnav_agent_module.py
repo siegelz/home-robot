@@ -65,6 +65,7 @@ class ObjectNavAgentModule(nn.Module):
         self.policy = ObjectNavFrontierExplorationPolicy(
             exploration_strategy=config.AGENT.exploration_strategy,
             num_sem_categories=config.AGENT.SEMANTIC_MAP.num_sem_categories,
+            semantic_frontier_exploration=config.AGENT.SEMANTIC_MAP.semantic_frontier_exploration,
             explored_area_dilation_radius=getattr(
                 config.AGENT.PLANNER, "explored_area_dilation_radius", 10
             ),

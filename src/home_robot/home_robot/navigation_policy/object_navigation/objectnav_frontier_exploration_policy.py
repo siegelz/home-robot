@@ -25,10 +25,12 @@ class ObjectNavFrontierExplorationPolicy(nn.Module):
         exploration_strategy: str,
         num_sem_categories: int,
         explored_area_dilation_radius=10,
+        semantic_frontier_exploration=False,
     ):
         super().__init__()
         assert exploration_strategy in ["seen_frontier", "been_close_to_frontier"]
         self.exploration_strategy = exploration_strategy
+        self.semantic_frontier_exploration = semantic_frontier_exploration
 
         self.dilate_explored_kernel = nn.Parameter(
             torch.from_numpy(skimage.morphology.disk(explored_area_dilation_radius))
@@ -263,6 +265,8 @@ class ObjectNavFrontierExplorationPolicy(nn.Module):
 
     def explore_otherwise(self, map_features, goal_map, found_goal):
         """Explore closest unexplored region otherwise."""
+        print("Semantic Frontier Exploration:", self.semantic_frontier_exploration)
+
         frontier_map = self.get_frontier_map(map_features)
         batch_size = map_features.shape[0]
         for e in range(batch_size):
