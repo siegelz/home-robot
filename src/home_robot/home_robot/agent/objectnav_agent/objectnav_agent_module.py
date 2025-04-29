@@ -14,6 +14,7 @@ from home_robot.mapping.semantic.categorical_2d_semantic_map_module import (
 )
 from home_robot.navigation_policy.object_navigation.objectnav_frontier_exploration_policy import (
     ObjectNavFrontierExplorationPolicy,
+    ObjectNavSemanticExplorationPolicy,
 )
 
 # Do we need to visualize the frontier as we explore?
@@ -62,14 +63,24 @@ class ObjectNavAgentModule(nn.Module):
             gaze_width=getattr(config.AGENT.SEMANTIC_MAP, "gaze_width", 40),
             gaze_distance=getattr(config.AGENT.SEMANTIC_MAP, "gaze_distance", 1.5),
         )
-        self.policy = ObjectNavFrontierExplorationPolicy(
-            exploration_strategy=config.AGENT.exploration_strategy,
-            num_sem_categories=config.AGENT.SEMANTIC_MAP.num_sem_categories,
-            semantic_frontier_exploration=config.AGENT.SEMANTIC_MAP.semantic_frontier_exploration,
-            explored_area_dilation_radius=getattr(
-                config.AGENT.PLANNER, "explored_area_dilation_radius", 10
-            ),
-        )
+        if config.AGENT.SEMANTIC_MAP.semantic_frontier_exploration:
+            self.policy = ObjectNavSemanticExplorationPolicy(
+                exploration_strategy=config.AGENT.exploration_strategy,
+                num_sem_categories=config.AGENT.SEMANTIC_MAP.num_sem_categories,
+                semantic_frontier_exploration=config.AGENT.SEMANTIC_MAP.semantic_frontier_exploration,
+                explored_area_dilation_radius=getattr(
+                    config.AGENT.PLANNER, "explored_area_dilation_radius", 10
+                ),
+            )
+        else:
+            self.policy = ObjectNavFrontierExplorationPolicy(
+                exploration_strategy=config.AGENT.exploration_strategy,
+                num_sem_categories=config.AGENT.SEMANTIC_MAP.num_sem_categories,
+                semantic_frontier_exploration=config.AGENT.SEMANTIC_MAP.semantic_frontier_exploration,
+                explored_area_dilation_radius=getattr(
+                    config.AGENT.PLANNER, "explored_area_dilation_radius", 10
+                ),
+            )
 
     @property
     def goal_update_steps(self):
