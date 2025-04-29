@@ -8,7 +8,7 @@ import torch
 from torch import nn
 import gym
 
-from home_robot.home_robot.navigation_policy.object_navigation.objectnav_frontier_exploration_policy import ObjectNavFrontierExplorationPolicy
+from home_robot.navigation_policy.object_navigation.objectnav_frontier_exploration_policy import ObjectNavFrontierExplorationPolicy
 from home_robot.ogn.model import RL_Policy
 from home_robot.ogn.utils.storage import GlobalRolloutStorage
 
@@ -100,7 +100,7 @@ class ObjectNavSemanticExplorationPolicy(ObjectNavFrontierExplorationPolicy):
         """
 
         breakpoint() # check what map_features looks like?
-        num_scenes = map_features.shape[0]
+        num_scenes = map_features.shape[0] # (1, 17, 480, 480)
 
         # Run Global Policy (global_goals = Long-Term Goal)
         # TODO we're not using map features or anything in here... replace g_rollouts with that?
