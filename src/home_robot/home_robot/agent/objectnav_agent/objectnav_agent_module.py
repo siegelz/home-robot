@@ -12,10 +12,8 @@ from home_robot.mapping.instance import InstanceMemory
 from home_robot.mapping.semantic.categorical_2d_semantic_map_module import (
     Categorical2DSemanticMapModule,
 )
-from home_robot.navigation_policy.object_navigation.objectnav_frontier_exploration_policy import (
-    ObjectNavFrontierExplorationPolicy,
-    ObjectNavSemanticExplorationPolicy,
-)
+from home_robot.navigation_policy.object_navigation.objectnav_frontier_exploration_policy import ObjectNavFrontierExplorationPolicy
+from home_robot.navigation_policy.object_navigation.objectnav_semantic_exploration_policy import ObjectNavSemanticExplorationPolicy
 
 # Do we need to visualize the frontier as we explore?
 debug_frontier_map = False
@@ -67,7 +65,6 @@ class ObjectNavAgentModule(nn.Module):
             self.policy = ObjectNavSemanticExplorationPolicy(
                 exploration_strategy=config.AGENT.exploration_strategy,
                 num_sem_categories=config.AGENT.SEMANTIC_MAP.num_sem_categories,
-                semantic_frontier_exploration=config.AGENT.SEMANTIC_MAP.semantic_frontier_exploration,
                 explored_area_dilation_radius=getattr(
                     config.AGENT.PLANNER, "explored_area_dilation_radius", 10
                 ),
@@ -76,7 +73,6 @@ class ObjectNavAgentModule(nn.Module):
             self.policy = ObjectNavFrontierExplorationPolicy(
                 exploration_strategy=config.AGENT.exploration_strategy,
                 num_sem_categories=config.AGENT.SEMANTIC_MAP.num_sem_categories,
-                semantic_frontier_exploration=config.AGENT.SEMANTIC_MAP.semantic_frontier_exploration,
                 explored_area_dilation_radius=getattr(
                     config.AGENT.PLANNER, "explored_area_dilation_radius", 10
                 ),

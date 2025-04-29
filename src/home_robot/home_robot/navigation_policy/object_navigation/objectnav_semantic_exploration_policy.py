@@ -3,7 +3,15 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import numpy as np
+import torch
+from torch import nn
+import gym
+
 from home_robot.home_robot.navigation_policy.object_navigation.objectnav_frontier_exploration_policy import ObjectNavFrontierExplorationPolicy
+from home_robot.ogn.model import RL_Policy
+from home_robot.ogn.utils.storage import GlobalRolloutStorage
+
 
 class ObjectNavSemanticExplorationPolicy(ObjectNavFrontierExplorationPolicy):
     """
@@ -13,6 +21,69 @@ class ObjectNavSemanticExplorationPolicy(ObjectNavFrontierExplorationPolicy):
     This policy builds on the frontier exploration by adding semantic-aware exploration
     when the object goal is not found in the map, based on RL_policy from OGN paper
     """
+
+    def __init__(
+        self,
+        exploration_strategy: str,
+        num_sem_categories: int,
+        explored_area_dilation_radius=10,
+    ):
+        super().__init__(exploration_strategy, num_sem_categories, explored_area_dilation_radius)
+
+        # Initialize semantic navigation policy network
+        cuda = True
+        self.device = torch.device("cuda:0" if cuda else "cpu")
+
+        # arguments (taken from OGN arguments.py)
+        self.g_hidden_size = 256 # default global hidden size
+        self.use_recurrent_global = 0 # default: no
+        self.num_sem_categories = 16
+        self.map_size_cm = 2400
+        self.map_resolution = 5
+        self.global_downscaling = 2
+        self.num_global_steps = 20
+        self.num_scenes = 1 # num_processes but we just want 1 for now. TODO check later?
+
+        g_policy_load = "/home-robot/data/ogn/sem_exp.pth"
+
+        # Calculating full and local map sizes
+        # nc = self.num_sem_categories + 4  # num channels
+        map_size = self.map_size_cm // self.map_resolution
+        self.full_w, self.full_h = map_size, map_size
+        self.local_w = int(self.full_w / self.global_downscaling)
+        self.local_h = int(self.full_h / self.global_downscaling)
+
+        # Global policy observation space
+        self.ngc = 8 + self.num_sem_categories
+        self.es = 2
+        self.g_observation_space = gym.spaces.Box(0, 1,
+                                         (self.ngc,
+                                          self.local_w,
+                                          self.local_h), dtype='uint8')
+
+        # Global policy action space
+        self.g_action_space = gym.spaces.Box(low=0.0, high=0.99,
+                                    shape=(2,), dtype=np.float32)
+
+        # Global policy network for navigation
+        self.g_policy = RL_Policy(self.g_observation_space.shape, self.g_action_space,
+                         model_type=1,
+                         base_kwargs={'recurrent': self.use_recurrent_global,
+                                      'hidden_size': self.g_hidden_size,
+                                      'num_sem_categories': self.ngc - 8
+                                      }).to(self.device)
+
+        # Storage (TODO do we need this? if just using inference, maybe we don't)
+        self.g_rollouts = GlobalRolloutStorage(self.num_global_steps,
+                                      self.num_scenes, self.g_observation_space.shape,
+                                      self.g_action_space, self.g_policy.rec_state_size,
+                                      self.es).to(self.device)
+
+        print("Loading model {} for inference".format(g_policy_load))
+        state_dict = torch.load(g_policy_load, map_location=lambda storage, loc: storage)
+        self.g_policy.load_state_dict(state_dict)
+        self.g_policy.eval()
+
     
     def explore_otherwise(self, map_features, goal_map, found_goal):
         """
@@ -20,12 +91,38 @@ class ObjectNavSemanticExplorationPolicy(ObjectNavFrontierExplorationPolicy):
         is not found in the map.
         
         Args:
-            map_features: semantic map features
-            goal_map: binary map encoding goal(s)
+            map_features: semantic map features (shape[0] is batch_size/num_scenes)
+            goal_map: binary map encoding goal(s) as they are currently
             found_goal: binary variables denoting whether we found the goal
             
         Returns:
-            goal_map: updated binary map encoding goal(s)
+            goal_maps: updated binary map encoding goal(s), for entire batch
         """
-        raise NotImplementedError()
-        
+
+        breakpoint() # check what map_features looks like?
+        num_scenes = map_features.shape[0]
+
+        # Run Global Policy (global_goals = Long-Term Goal)
+        # TODO we're not using map features or anything in here... replace g_rollouts with that?
+        g_value, g_action, g_action_log_prob, g_rec_states = \
+            self.g_policy.act( # TODO pass map_features etc instead of g_rollouts
+                self.g_rollouts.obs[0],
+                self.g_rollouts.rec_states[0],
+                self.g_rollouts.masks[0],
+                extras=self.g_rollouts.extras[0],
+                deterministic=False
+            )
+
+        # g_action is 2D BOX [0,1] x [0,1]
+        cpu_actions = nn.Sigmoid()(g_action).cpu().numpy()
+        global_goals = [[int(action[0] * self.local_w), int(action[1] * self.local_h)]
+                        for action in cpu_actions] # [(4, 5)]
+        global_goals = [[min(x, int(self.local_w - 1)), min(y, int(self.local_h - 1))]
+                        for x, y in global_goals]
+
+        # only update if not found goal
+        for e in range(num_scenes):
+            if not found_goal[e]:
+                goal_map[e, global_goals[e][0], global_goals[e][1]] = 1
+
+        return goal_map
