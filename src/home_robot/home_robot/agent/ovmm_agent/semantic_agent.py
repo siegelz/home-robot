@@ -399,8 +399,8 @@ class SemanticAgent(OpenVocabManipAgent):
         global_input[:, 8:, :, :] = self.local_map[:, 4:, :, :].detach()
         
         # Get goal category from task observations
-        # TODO change to object_goal
-        goal_cat_id = torch.tensor([obs.task_observations['goal_cat_id']]).to(self.device)
+        # TODO handle semantic map - categories might be different between HomeRobot and OGN
+        goal_cat_id = torch.tensor([obs.task_observations['object_goal']]).to(self.device)
         
         # Get orientation
         orientation = torch.tensor([
