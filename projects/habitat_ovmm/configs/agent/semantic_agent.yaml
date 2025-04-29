@@ -31,6 +31,7 @@ SEMANTIC_MAP:
   record_instance_ids: False
   max_instances: 0
   exploration_type: default
+  semantic_frontier_exploration: True
 
 SKILLS:
   GAZE_OBJ:
