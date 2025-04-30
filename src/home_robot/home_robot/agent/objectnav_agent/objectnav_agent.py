@@ -218,6 +218,7 @@ class ObjectNavAgent(Agent):
         (
             goal_map,
             found_goal,
+            found_goal_rec,
             frontier_map,
             self.semantic_map.local_map,
             self.semantic_map.global_map,
@@ -252,8 +253,12 @@ class ObjectNavAgent(Agent):
         self.semantic_map.lmb = seq_lmb[:, -1]
         self.semantic_map.origins = seq_origins[:, -1]
 
+        print(f"=== FOUND GOAL IN AGENT: {found_goal} ===")
         goal_map = goal_map.squeeze(1).cpu().numpy()
         found_goal = found_goal.squeeze(1).cpu()
+        if found_goal_rec:
+            found_goal_rec = found_goal_rec.squeeze(1).cpu()
+        print(f"===> Num environments: {self.num_environments}")
 
         for e in range(self.num_environments):
             self.semantic_map.update_frontier_map(e, frontier_map[e][0].cpu().numpy())
@@ -294,6 +299,7 @@ class ObjectNavAgent(Agent):
                     "been_close_map": self.semantic_map.get_been_close_map(e),
                     "timestep": self.timesteps[e],
                     "found_goal": found_goal[e].item(),
+                    "found_goal_rec": found_goal_rec[e].item() if found_goal_rec else None,
                 }
                 for e in range(self.num_environments)
             ]
@@ -305,6 +311,9 @@ class ObjectNavAgent(Agent):
 
         else:
             vis_inputs = [{} for e in range(self.num_environments)]
+
+        print(f"==> Planner_inputs.found_goal = {planner_inputs[0]['found_goal']}")
+        print(f"==> Vis_inputs.found_goal = {vis_inputs[0]['found_goal']}")
         return planner_inputs, vis_inputs
 
     def reset_vectorized(self):

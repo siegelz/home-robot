@@ -203,7 +203,7 @@ class ObjectNavAgentModule(nn.Module):
         # Compute the goal map
         # breakpoint() # check size of final_global_map! should have 24 chnanels, why it 11
         if self.is_semantic: # TODO return used otherwise
-            goal_map, found_goal = self.policy(
+            goal_map, found_goal, found_goal_rec = self.policy(
                 final_global_map,
                 final_local_map,
                 seq_local_pose[:, -1], # [batch_size, seq, 3] --> [batch_size, 3]
@@ -214,8 +214,10 @@ class ObjectNavAgentModule(nn.Module):
                 seq_instance_id,
                 seq_nav_to_recep,
             )
+            print(f"=== FOUND GOAL FROM POLICY: {found_goal} ====")
+            print(f"=== FOUND GOAL REC FROM POLICY: {found_goal_rec} ====")
         else:
-            goal_map, found_goal = self.policy(
+            goal_map, found_goal, found_goal_rec = self.policy(
                 map_features,
                 seq_object_goal_category,
                 seq_start_recep_goal_category,
@@ -226,6 +228,11 @@ class ObjectNavAgentModule(nn.Module):
 
         seq_goal_map = goal_map.view(batch_size, sequence_length, *goal_map.shape[-2:])
         seq_found_goal = found_goal.view(batch_size, sequence_length)
+        print(f"==== SEQ FOUND GOAL: {seq_found_goal} ====")
+        seq_found_goal_rec = None
+        if found_goal_rec:
+            seq_found_goal_rec = found_goal_rec.view(batch_size, sequence_length)
+            print(f"==== SEQ FOUND GOAL REC: {seq_found_goal_rec} ====")
 
         # Compute the frontier map here
         frontier_map = self.policy.get_frontier_map(map_features)
@@ -247,6 +254,7 @@ class ObjectNavAgentModule(nn.Module):
         return (
             seq_goal_map,
             seq_found_goal,
+            seq_found_goal_rec,
             seq_frontier_map,
             final_local_map,
             final_global_map,

@@ -120,6 +120,7 @@ class ObjectNavSemanticExplorationPolicy(ObjectNavFrontierExplorationPolicy):
         self.global_input = global_input
         self.local_pose = local_pose
         self.object_category = object_category
+        self.start_recep_category = start_recep_category
         return super().forward(
             map_features,
             object_category,
@@ -136,7 +137,8 @@ class ObjectNavSemanticExplorationPolicy(ObjectNavFrontierExplorationPolicy):
         for e in range(self.num_scenes):
             global_orientation[e] = int((locs[e, 2] + 180.0) / 5.)
         self.extras[:, 0] = global_orientation[:, 0]
-        self.extras[:, 1] = self.object_category
+        # self.extras[:, 1] = self.object_category
+        self.extras[:, 1] = self.start_recep_category # we want to be navigating to the start recep, not the object (find where a table is likely to be, not where a cup is likely to be)
 
     def explore_otherwise(self, map_features, goal_map, found_goal):
         """
@@ -181,6 +183,7 @@ class ObjectNavSemanticExplorationPolicy(ObjectNavFrontierExplorationPolicy):
         # print(global_goals)
 
         # only update if not found goal
+        # print("==> FOUND GOAL REC in explore otherwise", found_goal)
         for e in range(num_scenes):
             if not found_goal[e]:
                 print("==== USING OGN ====")

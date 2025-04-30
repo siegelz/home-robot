@@ -57,6 +57,8 @@ class ObjectNavFrontierExplorationPolicy(nn.Module):
         goal_map = self.explore_otherwise(map_features, goal_map, found_goal)
         return goal_map, found_goal
 
+    # ALERT ALERT TWO FOUND GOALS
+    # 3 STEPS
     def reach_object_recep_combination(
         self, map_features, object_category, recep_category
     ):
@@ -76,7 +78,7 @@ class ObjectNavFrontierExplorationPolicy(nn.Module):
         )
         # Otherwise, set closest frontier as the goal
         goal_map = self.explore_otherwise(map_features, goal_map, found_rec_goal)
-        return goal_map, found_goal
+        return goal_map, found_goal, found_rec_goal
 
     def forward(
         self,
@@ -99,6 +101,7 @@ class ObjectNavFrontierExplorationPolicy(nn.Module):
             goal_map: binary map encoding goal(s) of shape (batch_size, M, M)
             found_goal: binary variables to denote whether we found the object
             goal category of shape (batch_size,)
+            found_rec_goal (might be none)
         """
         assert (
             object_category is not None
@@ -141,8 +144,9 @@ class ObjectNavFrontierExplorationPolicy(nn.Module):
                 nav_to_recep = torch.tensor([0] * map_features.shape[0])
 
             # there is at least one instance in the batch where the goal is object
+            found_rec_goal_o = None
             if nav_to_recep.sum() < map_features.shape[0]:
-                goal_map_o, found_goal_o = self.reach_object_recep_combination(
+                goal_map_o, found_goal_o, found_rec_goal_o = self.reach_object_recep_combination(
                     map_features, object_category, start_recep_category
                 )
             # there is at least one instance in the batch where the goal is receptacle
@@ -152,9 +156,9 @@ class ObjectNavFrontierExplorationPolicy(nn.Module):
                 )
             # some instances in batch may be navigating to objects (before pick skill) and some may be navigating to recep (before place skill)
             if nav_to_recep.sum() == 0:
-                return goal_map_o, found_goal_o
+                return goal_map_o, found_goal_o, found_rec_goal_o
             elif nav_to_recep.sum() == map_features.shape[0]:
-                return goal_map_r, found_goal_r
+                return goal_map_r, found_goal_r, found_rec_goal_o
             else:
                 goal_map = (
                     goal_map_o * nav_to_recep.view(-1, 1, 1)
@@ -163,13 +167,13 @@ class ObjectNavFrontierExplorationPolicy(nn.Module):
                 found_goal = (
                     found_goal_r * nav_to_recep + (1 - nav_to_recep) * found_goal_r
                 )
-                return goal_map, found_goal
+                return goal_map, found_goal, found_rec_goal_o
         else:
             # Here, the goal is specified by a single object or receptacle to navigate to with no additional constraints (eg. the given object can be on any receptacle)
             goal_category = (
                 object_category if object_category is not None else end_recep_category
             )
-            return self.reach_single_category(map_features, goal_category)
+            return *self.reach_single_category(map_features, goal_category), None
 
     def cluster_filtering(self, m):
         # m is a 480x480 goal map

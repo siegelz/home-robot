@@ -249,6 +249,7 @@ class Visualizer:
         closest_goal_map: Optional[np.ndarray] = None,
         sensor_pose: np.ndarray = None,
         found_goal: bool = None,
+        found_goal_rec: bool = None,
         explored_map: np.ndarray = None,
         semantic_map: np.ndarray = None,
         been_close_map: np.ndarray = None,
@@ -457,6 +458,14 @@ class Visualizer:
             f"found_goal: {found_goal}",
             V.FIRST_SEM_X2,
             V.Y2,
+            V.THIRD_PERSON_W,
+            V.BOTTOM_PADDING,
+        )
+        image_vis = self._put_text_on_image(
+            image_vis,
+            f"found_goal_rec: {found_goal_rec}",
+            V.FIRST_SEM_X2,
+            V.Y2 + 30,
             V.THIRD_PERSON_W,
             V.BOTTOM_PADDING,
         )
