@@ -151,6 +151,7 @@ class ObjectNavSemanticExplorationPolicy(ObjectNavFrontierExplorationPolicy):
         Returns:
             goal_maps: updated binary map encoding goal(s), for entire batch
         """
+        print("===== EXPLORE OTHERWISE =====")
 
         # breakpoint() # check what map_features looks like?
         num_scenes = map_features.shape[0] # (1, 17, 480, 480)
@@ -176,9 +177,13 @@ class ObjectNavSemanticExplorationPolicy(ObjectNavFrontierExplorationPolicy):
         global_goals = [[min(x, int(self.local_w - 1)), min(y, int(self.local_h - 1))]
                         for x, y in global_goals]
 
+        # print("======= GLOBAL GOALS =========")
+        # print(global_goals)
+
         # only update if not found goal
         for e in range(num_scenes):
             if not found_goal[e]:
+                print("==== USING OGN ====")
                 goal_map[e, global_goals[e][0], global_goals[e][1]] = 1
 
         return goal_map

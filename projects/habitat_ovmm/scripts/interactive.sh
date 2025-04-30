@@ -37,6 +37,7 @@ docker run -it --entrypoint /bin/bash \
       -v $(realpath ../../src/home_robot/home_robot/agent):/home-robot/src/home_robot/home_robot/agent \
       -v $(realpath ../../src/home_robot/home_robot/ogn):/home-robot/src/home_robot/home_robot/ogn \
       -v $(realpath ../../src/home_robot/home_robot/navigation_policy):/home-robot/src/home_robot/home_robot/navigation_policy \
+      -v $(realpath ../../src/home_robot_sim/home_robot_sim/env):/home-robot/src/home_robot_sim/home_robot_sim/env \
       -v $(realpath ../../projects/habitat_ovmm/configs):/home-robot/projects/habitat_ovmm/configs \
       -v $(realpath ../../projects/habitat_ovmm/evaluator.py):/home-robot/projects/habitat_ovmm/evaluator.py \
       -v $(realpath ../../projects/habitat_ovmm/scripts/submission.sh):/home-robot/projects/habitat_ovmm/scripts/submission.sh \

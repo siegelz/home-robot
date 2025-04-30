@@ -166,6 +166,7 @@ class Visualizer:
         self.print_images = False
 
     def get_semantic_vis(self, semantic_map, palette, rgb_frame=None):
+        # overlay
         semantic_map_vis = Image.new(
             "P", (semantic_map.shape[1], semantic_map.shape[0])
         )
@@ -382,7 +383,10 @@ class Visualizer:
 
                 if short_term_goal is not None:
                     short_term_goal_mask = np.zeros(goal_mask.shape)
-                    short_term_goal_mask[short_term_goal[0], short_term_goal[1]] = 1
+                    try:
+                        short_term_goal_mask[short_term_goal[0], short_term_goal[1]] = 1
+                    except Exception as e:
+                        print("Out of bounds? ", e)
                     short_term_goal_mask = (
                         1
                         - skimage.morphology.binary_dilation(
@@ -447,10 +451,21 @@ class Visualizer:
             )
         if instance_memory is not None:
             image_vis = self._visualize_instance_counts(image_vis, instance_memory)
+        
+        image_vis = self._put_text_on_image(
+            image_vis,
+            f"found_goal: {found_goal}",
+            V.FIRST_SEM_X2,
+            V.Y2,
+            V.THIRD_PERSON_W,
+            V.BOTTOM_PADDING,
+        )
+
         if self.show_images:
             cv2.imshow("Visualization", image_vis)
             cv2.waitKey(1)
         if self.print_images:
+            # VISUALIZER
             cv2.imwrite(
                 os.path.join(self.vis_dir, "snapshot_{:03d}.png".format(timestep)),
                 image_vis,

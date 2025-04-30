@@ -273,6 +273,7 @@ class OVMMEvaluator(PPOTrainer):
             current_episode_metrics = {}
             obs_data = [observations]
             while not done:
+                # breakpoint()
                 action, info, _ = agent.act(observations) # calling act on an agent given observations
                 observations, done, hab_info = self._env.apply_action(action, info)
                 if self.data_dir:

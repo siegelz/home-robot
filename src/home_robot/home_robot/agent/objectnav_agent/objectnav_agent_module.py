@@ -202,7 +202,7 @@ class ObjectNavAgentModule(nn.Module):
             seq_instance_id = seq_instance_id.flatten(0, 1)
         # Compute the goal map
         # breakpoint() # check size of final_global_map! should have 24 chnanels, why it 11
-        if self.is_semantic:
+        if self.is_semantic: # TODO return used otherwise
             goal_map, found_goal = self.policy(
                 final_global_map,
                 final_local_map,
