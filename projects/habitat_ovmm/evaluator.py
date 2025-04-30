@@ -270,6 +270,12 @@ class OVMMEvaluator(PPOTrainer):
                 f"{current_episode.scene_id.split('/')[-1].split('.')[0]}_"
                 f"{current_episode.episode_id}"
             )
+
+            if current_episode_key != "103997586_171030669_8":
+                count_episodes += 1
+                pbar.update(1)
+                continue
+
             current_episode_metrics = {}
             obs_data = [observations]
             while not done:
