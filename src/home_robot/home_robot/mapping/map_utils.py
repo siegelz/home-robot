@@ -37,6 +37,7 @@ def init_map_and_pose_for_env(
     x, y = (global_pose[e, :2] * 100 / p.resolution).int()
     global_map[e].fill_(0.0)
     global_map[e, 2:4, y - 1 : y + 2, x - 1 : x + 2] = 1.0
+    # channels 2, 3 initialized with 1 (where agent is, where it has been, i think)
 
     recenter_local_map_and_pose_for_env(
         e,

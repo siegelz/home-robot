@@ -82,6 +82,7 @@ class ObjectNavAgent(Agent):
 
         self.visualize = config.VISUALIZE or config.PRINT_IMAGES
         self.use_dilation_for_stg = config.AGENT.PLANNER.use_dilation_for_stg
+        # breakpoint()
         self.semantic_map = Categorical2DSemanticMapState(
             device=self.device,
             num_environments=self.num_environments,

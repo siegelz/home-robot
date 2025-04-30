@@ -67,8 +67,10 @@ class Categorical2DSemanticMapState:
         # 1: Explored Area
         # 2: Current Agent Location
         # 3: Past Agent Locations
-        # 4: Regions agent has been close to
-        # 5, 6, 7, .., num_sem_categories + 5: Semantic Categories
+        # 4: Regions agent has been close to # THIS ONE IS NEW
+        # 5: Blacklisted map # THIS ONE ALSO NEW
+        # 6, 7, 8..., num_sem_categories + 6: Semantic Categories
+        # breakpoint()
         num_channels = self.num_sem_categories + MC.NON_SEM_CHANNELS
         if record_instance_ids:
             # num_sem_categories + 5, ..., 2 * num_sem_categories + 5: Instance ids per semantic category
@@ -78,6 +80,7 @@ class Categorical2DSemanticMapState:
         if evaluate_instance_tracking:
             num_channels += max_instances + 1
 
+        # breakpoint() # num_channels is 11, i think it should be 24 tho. check?
         self.global_map = torch.zeros(
             self.num_environments,
             num_channels,

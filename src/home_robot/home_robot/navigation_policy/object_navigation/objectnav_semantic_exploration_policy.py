@@ -54,8 +54,8 @@ class ObjectNavSemanticExplorationPolicy(ObjectNavFrontierExplorationPolicy):
         self.local_h = int(self.full_h / self.global_downscaling)
 
         # Global policy observation space
-        self.ngc = 8 + self.num_sem_categories
-        self.es = 2
+        self.ngc = 8 + self.num_sem_categories  # 24
+        self.es = 2 # extras size
         self.g_observation_space = gym.spaces.Box(0, 1,
                                          (self.ngc,
                                           self.local_w,
@@ -74,17 +74,70 @@ class ObjectNavSemanticExplorationPolicy(ObjectNavFrontierExplorationPolicy):
                                       }).to(self.device)
 
         # Storage (TODO do we need this? if just using inference, maybe we don't)
-        self.g_rollouts = GlobalRolloutStorage(self.num_global_steps,
-                                      self.num_scenes, self.g_observation_space.shape,
-                                      self.g_action_space, self.g_policy.rec_state_size,
-                                      self.es).to(self.device)
+        # self.g_rollouts = GlobalRolloutStorage(self.num_global_steps,
+        #                               self.num_scenes, self.g_observation_space.shape,
+        #                               self.g_action_space, self.g_policy.rec_state_size,
+        #                               self.es).to(self.device)
+        # only need to keep track of the last one, so we dont' need num_global_steps
+        self.global_input = torch.zeros(self.num_scenes, *self.g_observation_space.shape).to(self.device)
+        self.g_rec_states = torch.zeros(self.num_scenes, self.g_policy.rec_state_size).to(self.device)
+        self.masks = torch.ones(self.num_scenes)  # i think this is just a 1 lol, bc num_scenes is 1
+        self.extras = torch.zeros(self.num_scenes, self.es, dtype=torch.long).to(self.device)
+
+        '''
+        '''
 
         print("Loading model {} for inference".format(g_policy_load))
         state_dict = torch.load(g_policy_load, map_location=lambda storage, loc: storage)
         self.g_policy.load_state_dict(state_dict)
         self.g_policy.eval()
 
-    
+    def forward(
+        self,
+        global_map, # 22 channels. we only need 20
+        local_map,
+        local_pose,
+        map_features,
+        object_category=None,
+        start_recep_category=None,
+        end_recep_category=None,
+        instance_id=None,
+        nav_to_recep=None,
+    ):
+
+        # TODO COMBINE local map and full_map (downsampled). 
+        # breakpoint()
+        global_input = torch.zeros(1, self.ngc, self.local_w, self.local_h).to(self.device)
+        # Fill in map channels
+        global_input[:, 0:4, :, :] = local_map[:, 0:4, :, :].detach()
+        global_input[:, 4:8, :, :] = torch.nn.MaxPool2d(self.global_downscaling)(
+            global_map[:, 0:4, :, :]) # is global_map same as full_map?
+        # note that this ignores 5,6 in global_map and local_map, that is fine we don't need it
+        global_input[:, 8:, :, :] = local_map[:, 6:, :, :].detach()
+
+        # breakpoint()
+
+        self.global_input = global_input
+        self.local_pose = local_pose
+        self.object_category = object_category
+        return super().forward(
+            map_features,
+            object_category,
+            start_recep_category,
+            end_recep_category,
+            instance_id,
+            nav_to_recep
+        )
+
+    def _calculate_extras(self):
+        # prepare extras
+        locs = self.local_pose.cpu().numpy()
+        global_orientation = torch.zeros(self.num_scenes, 1).long()
+        for e in range(self.num_scenes):
+            global_orientation[e] = int((locs[e, 2] + 180.0) / 5.)
+        self.extras[:, 0] = global_orientation[:, 0]
+        self.extras[:, 1] = self.object_category
+
     def explore_otherwise(self, map_features, goal_map, found_goal):
         """
         Override to use semantic information to guide exploration when the object goal
@@ -99,19 +152,22 @@ class ObjectNavSemanticExplorationPolicy(ObjectNavFrontierExplorationPolicy):
             goal_maps: updated binary map encoding goal(s), for entire batch
         """
 
-        breakpoint() # check what map_features looks like?
+        # breakpoint() # check what map_features looks like?
         num_scenes = map_features.shape[0] # (1, 17, 480, 480)
 
         # Run Global Policy (global_goals = Long-Term Goal)
-        # TODO we're not using map features or anything in here... replace g_rollouts with that?
-        g_value, g_action, g_action_log_prob, g_rec_states = \
-            self.g_policy.act( # TODO pass map_features etc instead of g_rollouts
-                self.g_rollouts.obs[0],
-                self.g_rollouts.rec_states[0],
-                self.g_rollouts.masks[0],
-                extras=self.g_rollouts.extras[0],
+        self._calculate_extras()
+        g_value, g_action, g_action_log_prob, self.g_rec_states = \
+            self.g_policy.act(
+                self.global_input, 
+                self.g_rec_states,
+                self.masks,
+                extras=self.extras,
                 deterministic=False
             )
+
+        # TODO how to update masks with termination information? would have to pass it all the way back down
+        # TODO update extras?
 
         # g_action is 2D BOX [0,1] x [0,1]
         cpu_actions = nn.Sigmoid()(g_action).cpu().numpy()

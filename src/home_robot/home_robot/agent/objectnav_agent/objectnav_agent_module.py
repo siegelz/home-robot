@@ -6,6 +6,7 @@
 
 from typing import Optional
 
+import torch
 import torch.nn as nn
 
 from home_robot.mapping.instance import InstanceMemory
@@ -61,7 +62,9 @@ class ObjectNavAgentModule(nn.Module):
             gaze_width=getattr(config.AGENT.SEMANTIC_MAP, "gaze_width", 40),
             gaze_distance=getattr(config.AGENT.SEMANTIC_MAP, "gaze_distance", 1.5),
         )
-        if config.AGENT.SEMANTIC_MAP.semantic_frontier_exploration:
+
+        self.is_semantic = config.AGENT.SEMANTIC_MAP.semantic_frontier_exploration
+        if self.is_semantic:
             self.policy = ObjectNavSemanticExplorationPolicy(
                 exploration_strategy=config.AGENT.exploration_strategy,
                 num_sem_categories=config.AGENT.SEMANTIC_MAP.num_sem_categories,
@@ -198,14 +201,29 @@ class ObjectNavAgentModule(nn.Module):
         if seq_instance_id is not None:
             seq_instance_id = seq_instance_id.flatten(0, 1)
         # Compute the goal map
-        goal_map, found_goal = self.policy(
-            map_features,
-            seq_object_goal_category,
-            seq_start_recep_goal_category,
-            seq_end_recep_goal_category,
-            seq_instance_id,
-            seq_nav_to_recep,
-        )
+        # breakpoint() # check size of final_global_map! should have 24 chnanels, why it 11
+        if self.is_semantic:
+            goal_map, found_goal = self.policy(
+                final_global_map,
+                final_local_map,
+                seq_local_pose[:, -1], # [batch_size, seq, 3] --> [batch_size, 3]
+                map_features, 
+                seq_object_goal_category,
+                seq_start_recep_goal_category,
+                seq_end_recep_goal_category,
+                seq_instance_id,
+                seq_nav_to_recep,
+            )
+        else:
+            goal_map, found_goal = self.policy(
+                map_features,
+                seq_object_goal_category,
+                seq_start_recep_goal_category,
+                seq_end_recep_goal_category,
+                seq_instance_id,
+                seq_nav_to_recep,
+            )
+
         seq_goal_map = goal_map.view(batch_size, sequence_length, *goal_map.shape[-2:])
         seq_found_goal = found_goal.view(batch_size, sequence_length)
 
