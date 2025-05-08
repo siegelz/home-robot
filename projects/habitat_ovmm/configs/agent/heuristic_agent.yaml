@@ -11,6 +11,7 @@ VISION:
 
 SEMANTIC_MAP:
   semantic_categories: coco_indoor # map semantic channel categories ("coco_indoor", "longtail_indoor", "mukul_indoor", "rearrange")
+  # num_sem_categories: 5    # Following 5 categories: ["misc", "object_category", "start_receptacle", "goal_receptacle", "others"]
   num_sem_categories: 16    # Following 5 categories: ["misc", "object_category", "start_receptacle", "goal_receptacle", "others"]
   map_size_cm: 2400        # global map size (in centimeters)
   map_resolution: 5        # size of map bins (in centimeters)

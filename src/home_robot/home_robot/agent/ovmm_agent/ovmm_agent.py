@@ -13,7 +13,10 @@ from trimesh import transformations as tra
 from home_robot.agent.objectnav_agent.objectnav_agent import ObjectNavAgent
 from home_robot.core.interfaces import DiscreteNavigationAction, Observations
 from home_robot.manipulation import HeuristicPickPolicy, HeuristicPlacePolicy
-from home_robot.perception.constants import RearrangeBasicCategories
+from home_robot.perception.constants import (
+  RearrangeBasicCategories,
+  HM3DtoCOCOIndoor
+)
 from home_robot.perception.wrapper import (
     OvmmPerception,
     build_vocab_from_category_map,
@@ -136,12 +139,18 @@ class OpenVocabManipAgent(ObjectNavAgent):
         """Get inputs for visual skill."""
         use_detic_viz = self.config.ENVIRONMENT.use_detic_viz
 
+        breakpoint()
         if self.config.GROUND_TRUTH_SEMANTICS == 1:
             semantic_category_mapping = None  # Visualizer handles mapping
         elif self.semantic_sensor.current_vocabulary_id == SemanticVocab.SIMPLE:
-            semantic_category_mapping = RearrangeBasicCategories()
+            if self.config.AGENT.SEMANTIC_MAP.semantic_categories == "coco_indoor":
+                breakpoint()
+                semantic_category_mapping = HM3DtoCOCOIndoor()
+            else: # assume rearrange
+                semantic_category_mapping = RearrangeBasicCategories()
         else:
             semantic_category_mapping = self.semantic_sensor.current_vocabulary
+        breakpoint()
 
         if use_detic_viz:
             semantic_frame = np.concatenate(
@@ -560,6 +569,7 @@ class OpenVocabManipAgent(ObjectNavAgent):
         if self.timesteps[0] == 0:
             self._init_episode(obs)
 
+        # PRODUCING SEMANTIC OBSERVATIONS
         if self.config.GROUND_TRUTH_SEMANTICS == 0:
             obs = self.semantic_sensor(obs) # populate obs.semantic information
         else:

@@ -293,7 +293,7 @@ mp3d_to_coco = {
     15: 8,  # sink
 }
 
-
+# TODO confirm if this class works for OGN
 class HM3DtoCOCOIndoor(SemanticCategoryMapping):
     """
     Mapping from category IDs in HM3D ObjectNav scenes/episodes to COCO indoor
@@ -302,6 +302,7 @@ class HM3DtoCOCOIndoor(SemanticCategoryMapping):
 
     def __init__(self):
         self.goal_id_to_goal_name = {idx: name for name, idx in coco_categories.items()}
+        self.goal_name_to_goal_id: Dict[str, int] = {}
         self.hm3d_goal_id_to_coco_goal_name = {
             0: "chair",
             1: "bed",

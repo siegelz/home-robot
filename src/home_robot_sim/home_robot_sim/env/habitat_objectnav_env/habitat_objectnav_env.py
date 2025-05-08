@@ -45,6 +45,7 @@ class HabitatObjectNavEnv(HabitatEnv):
             or "hm3d" in self.episodes_data_path
             or "mp3d" in self.episodes_data_path
         )
+        print("OMG NONE OF THIS EVER RUNS OH MY GOSH!")
         if "hm3d" in self.episodes_data_path:
             if config.AGENT.SEMANTIC_MAP.semantic_categories == "coco_indoor":
                 self.vocabulary = "coco"

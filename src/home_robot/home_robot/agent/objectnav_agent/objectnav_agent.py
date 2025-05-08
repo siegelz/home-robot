@@ -66,7 +66,7 @@ class ObjectNavAgent(Agent):
                 debug_visualize=config.PRINT_IMAGES,
             )
 
-        self._module = ObjectNavAgentModule(
+        self._module = ObjectNavAgentModule( # contains the ObjectNav exploration policy (either frontier or semantic)
             config, instance_memory=self.instance_memory
         )
         self.num_sem_categories = config.AGENT.SEMANTIC_MAP.num_sem_categories

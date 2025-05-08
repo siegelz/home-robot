@@ -116,6 +116,7 @@ class Visualizer:
                             i - len(obj_id_to_name_mapping)
                         ]
 
+                # the default category mapping
                 self.semantic_category_mapping = RearrangeDETICCategories(
                     self.obj_rec_combined_mapping
                 )
@@ -296,6 +297,7 @@ class Visualizer:
         if not self.show_images and not self.print_images:
             return
 
+        breakpoint() # semantic category mapping object should be none
         if semantic_category_mapping is not None:
             self.semantic_category_mapping = semantic_category_mapping
 
@@ -328,6 +330,7 @@ class Visualizer:
             self.set_map_params(semantic_map_config)
 
         palette = self.semantic_category_mapping.map_color_palette.copy()
+        breakpoint()
 
         if obstacle_map is not None:
             curr_x, curr_y, curr_o, gy1, gy2, gx1, gx2 = sensor_pose
