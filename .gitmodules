@@ -26,6 +26,3 @@
 [submodule "src/third_party/spot-sim2real"]
 	path = src/third_party/spot-sim2real
 	url = git@github.com:Jdvakil/spot-sim2real.git
-[submodule "src/third_party/CenterNet2"]
-	path = src/third_party/CenterNet2
-	url = https://github.com/xingyizhou/CenterNet2.git

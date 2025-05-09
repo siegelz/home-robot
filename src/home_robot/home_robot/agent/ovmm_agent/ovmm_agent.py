@@ -73,6 +73,7 @@ class OpenVocabManipAgent(ObjectNavAgent):
             # currently we get ground truth semantics of only the target object category and all scene receptacles from the simulator
             raise NotImplementedError
 
+        self.is_semantic = config.AGENT.SEMANTIC_MAP.semantic_frontier_exploration
         self.skip_skills = config.AGENT.skip_skills
         self.max_pick_attempts = 100
         if config.GROUND_TRUTH_SEMANTICS == 0:
@@ -81,7 +82,11 @@ class OpenVocabManipAgent(ObjectNavAgent):
                 device_id,
                 self.verbose,
                 confidence_threshold=config.AGENT.VISION.confidence_threshold,
+                is_semantic=self.is_semantic,
             )
+            # TODO do we need to read coco indoor here??
+            # NOTE: no.. these are only used for creating simple/full/all maps, 
+            # which are ignored when coco used anyway. so no need for now
             self.obj_name_to_id, self.rec_name_to_id = read_category_map_file(
                 config.ENVIRONMENT.category_map_file
             )
@@ -139,18 +144,18 @@ class OpenVocabManipAgent(ObjectNavAgent):
         """Get inputs for visual skill."""
         use_detic_viz = self.config.ENVIRONMENT.use_detic_viz
 
-        breakpoint()
+        # breakpoint()
         if self.config.GROUND_TRUTH_SEMANTICS == 1:
             semantic_category_mapping = None  # Visualizer handles mapping
         elif self.semantic_sensor.current_vocabulary_id == SemanticVocab.SIMPLE:
             if self.config.AGENT.SEMANTIC_MAP.semantic_categories == "coco_indoor":
-                breakpoint()
+                # breakpoint()
                 semantic_category_mapping = HM3DtoCOCOIndoor()
             else: # assume rearrange
                 semantic_category_mapping = RearrangeBasicCategories()
         else:
             semantic_category_mapping = self.semantic_sensor.current_vocabulary
-        breakpoint()
+        # breakpoint()
 
         if use_detic_viz:
             semantic_frame = np.concatenate(
@@ -313,22 +318,28 @@ class OpenVocabManipAgent(ObjectNavAgent):
             1: goal_recep_name,
         }
 
+        # Determine which category type to use
+        category_type = "rearrange"
+        if hasattr(self.config.AGENT.SEMANTIC_MAP, "semantic_categories"):
+            if self.config.AGENT.SEMANTIC_MAP.semantic_categories == "coco_indoor":
+                category_type = "coco_indoor"
+
         # Simple vocabulary contains only object and necessary receptacles
         simple_vocab = build_vocab_from_category_map(
-            obj_id_to_name, simple_rec_id_to_name
+            obj_id_to_name, simple_rec_id_to_name, category_type=category_type
         )
         self.semantic_sensor.update_vocabulary_list(simple_vocab, SemanticVocab.SIMPLE)
 
         if update_full_vocabulary:
             # Full vocabulary contains the object and all receptacles
             full_vocab = build_vocab_from_category_map(
-                obj_id_to_name, self.rec_name_to_id
+                obj_id_to_name, self.rec_name_to_id, category_type=category_type
             )
             self.semantic_sensor.update_vocabulary_list(full_vocab, SemanticVocab.FULL)
 
         # All vocabulary contains all objects and all receptacles
         all_vocab = build_vocab_from_category_map(
-            self.obj_name_to_id, self.rec_name_to_id
+            self.obj_name_to_id, self.rec_name_to_id, category_type=category_type
         )
         self.semantic_sensor.update_vocabulary_list(all_vocab, SemanticVocab.ALL)
 
@@ -571,7 +582,7 @@ class OpenVocabManipAgent(ObjectNavAgent):
 
         # PRODUCING SEMANTIC OBSERVATIONS
         if self.config.GROUND_TRUTH_SEMANTICS == 0:
-            obs = self.semantic_sensor(obs) # populate obs.semantic information
+            obs = self.semantic_sensor(obs) # populates obs.semantic information
         else:
             obs.task_observations["semantic_frame"] = None
         info = self._get_info(obs)

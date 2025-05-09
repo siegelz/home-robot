@@ -10,7 +10,7 @@ from typing import Any, Dict, Optional, Tuple
 from loguru import logger
 
 from home_robot.core.interfaces import Observations
-from home_robot.perception.constants import RearrangeDETICCategories
+from home_robot.perception.constants import SemanticCategoryMapping
 from home_robot.utils.config import load_config
 
 
@@ -27,14 +27,15 @@ class OvmmPerception:
         gpu_device_id: int = 0,
         verbose: bool = False,
         confidence_threshold: float = 0.5,
+        is_semantic: bool = False,
         module: str = "grounded_sam",
         module_kwargs: Dict[str, Any] = {},
     ):
         self.config = config
         self._use_detic_viz = config.ENVIRONMENT.use_detic_viz
         self._detection_module = getattr(config.AGENT, "detection_module", "detic")
-        self._vocabularies: Dict[int, RearrangeDETICCategories] = {}
-        self._current_vocabulary: RearrangeDETICCategories = None
+        self._vocabularies: Dict[int, SemanticCategoryMapping] = {}
+        self._current_vocabulary: SemanticCategoryMapping = None
         self._current_vocabulary_id: int = None
         self.verbose = verbose
         if self._detection_module == "detic":
@@ -44,7 +45,7 @@ class OvmmPerception:
             )
 
             self._segmentation = DeticPerception(
-                vocabulary="custom",
+                vocabulary="coco" if is_semantic else "custom",
                 custom_vocabulary=".",
                 sem_gpu_id=gpu_device_id,
                 verbose=verbose,
@@ -70,11 +71,11 @@ class OvmmPerception:
         return self._current_vocabulary_id
 
     @property
-    def current_vocabulary(self) -> RearrangeDETICCategories:
+    def current_vocabulary(self) -> SemanticCategoryMapping:
         return self._current_vocabulary
 
     def update_vocabulary_list(
-        self, vocabulary: RearrangeDETICCategories, vocabulary_id: int
+        self, vocabulary: SemanticCategoryMapping, vocabulary_id: int
     ):
         """
         Update/insert a given vocabulary for the given ID.
@@ -85,6 +86,7 @@ class OvmmPerception:
         """
         Set given vocabulary ID to be the active vocabulary that the segmentation model uses.
         """
+        # breakpoint()
         vocabulary = self._vocabularies[vocabulary_id]
         self.segmenter_classes = (
             ["."] + list(vocabulary.goal_id_to_goal_name.values()) + ["other"]
@@ -113,6 +115,7 @@ class OvmmPerception:
         """
         Process observations. Add pointers to objects and other metadata in segmentation mask.
         """
+        # TODO fix bugs: there are mismatches between object/receptacle names and the vocabulary of coco indoor
         obs.semantic[obs.semantic == 0] = (
             self._current_vocabulary.num_sem_categories - 1
         )
@@ -192,8 +195,10 @@ def read_category_map_file(
 
 
 def build_vocab_from_category_map(
-    obj_id_to_name_mapping: Dict[int, str], rec_id_to_name_mapping: Dict[int, str]
-) -> RearrangeDETICCategories:
+    obj_id_to_name_mapping: Dict[int, str], 
+    rec_id_to_name_mapping: Dict[int, str],
+    category_type: str = "rearrange"
+) -> SemanticCategoryMapping:
     """
     Build vocabulary from category maps that can be used for semantic sensor and visualizations.
     """
@@ -205,9 +210,18 @@ def build_vocab_from_category_map(
             obj_rec_combined_mapping[i + 1] = rec_id_to_name_mapping[
                 i - len(obj_id_to_name_mapping)
             ]
-    vocabulary = RearrangeDETICCategories(
-        obj_rec_combined_mapping, len(obj_id_to_name_mapping)
-    )
+    
+    # Create the appropriate SemanticCategoryMapping type based on category_type
+    if category_type == "coco_indoor":
+        from home_robot.perception.constants import HM3DtoCOCOIndoor
+        # NOTE hack: this ignores obj_rec_combined_mapping, so SIMPLE, FULL, and ALL vocabularies will be the same
+        vocabulary = HM3DtoCOCOIndoor()
+    else:
+        from home_robot.perception.constants import RearrangeDETICCategories
+        vocabulary = RearrangeDETICCategories(
+            obj_rec_combined_mapping, len(obj_id_to_name_mapping)
+        )
+    
     return vocabulary
 
 

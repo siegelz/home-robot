@@ -360,6 +360,10 @@ class HM3DtoCOCOIndoor(SemanticCategoryMapping):
     def num_sem_categories(self):
         return 16
 
+    @property
+    def num_sem_obj_categories(self):
+        return 16
+
 
 languagenav_2categories_indexes = {
     1: "target",

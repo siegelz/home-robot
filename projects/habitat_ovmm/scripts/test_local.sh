@@ -37,7 +37,8 @@ docker run \
       -v $(realpath ../../video_dir):/home-robot/video_dir \
       -v $(realpath ../../src/home_robot/home_robot/agent):/home-robot/src/home_robot/home_robot/agent \
       -v $(realpath ../../src/home_robot/home_robot/ogn):/home-robot/src/home_robot/home_robot/ogn \
-      -v $(realpath ../../src/home_robot/home_robot/perception):/home-robot/src/home_robot/home_robot/perception \
+      -v $(realpath ../../src/home_robot/home_robot/perception/constants.py):/home-robot/src/home_robot/home_robot/perception/constants.py \
+      -v $(realpath ../../src/home_robot/home_robot/perception/wrapper.py):/home-robot/src/home_robot/home_robot/perception/wrapper.py \
       -v $(realpath ../../src/home_robot/home_robot/navigation_policy):/home-robot/src/home_robot/home_robot/navigation_policy \
       -v $(realpath ../../src/home_robot_sim/home_robot_sim/env):/home-robot/src/home_robot_sim/home_robot_sim/env \
       -v $(realpath ../../projects/habitat_ovmm/configs):/home-robot/projects/habitat_ovmm/configs \
