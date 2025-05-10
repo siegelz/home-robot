@@ -629,7 +629,6 @@ class OpenVocabManipAgent(ObjectNavAgent):
         # PRODUCING SEMANTIC OBSERVATIONS
         if self.config.GROUND_TRUTH_SEMANTICS == 0:
             obs = self.semantic_sensor(obs) # populates obs.semantic information
-            # pass # TROUBLESHOOT don't populate obs.semantic
             # obs.semantic.fill(0)
             # breakpoint()
         else:

@@ -46,8 +46,7 @@ class OvmmPerception:
 
             self._segmentation = DeticPerception(
                 vocabulary="custom",
-                # custom_vocabulary="chair,couch,potted plant,bed,toilet,tv,dining table,oven,sink,refrigerator,book,clock,vase,cup,bottle" if is_semantic else ".",
-                custom_vocabulary="eagle",
+                custom_vocabulary=".",
                 sem_gpu_id=gpu_device_id,
                 verbose=verbose,
                 confidence_threshold=confidence_threshold,
@@ -87,10 +86,13 @@ class OvmmPerception:
         """
         Set given vocabulary ID to be the active vocabulary that the segmentation model uses.
         """
-        # breakpoint()
+        breakpoint()
         vocabulary = self._vocabularies[vocabulary_id]
+        # self.segmenter_classes = (
+        #     ["."] + list(vocabulary.goal_id_to_goal_name.values()) + ["other"]
+        # )
         self.segmenter_classes = (
-            ["."] + list(vocabulary.goal_id_to_goal_name.values()) + ["other"]
+            [".", "chair", "other"]
         )
         self._segmentation.reset_vocab(self.segmenter_classes)
 
