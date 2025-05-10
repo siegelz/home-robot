@@ -45,8 +45,9 @@ class OvmmPerception:
             )
 
             self._segmentation = DeticPerception(
-                vocabulary="coco" if is_semantic else "custom",
-                custom_vocabulary=".",
+                vocabulary="custom",
+                # custom_vocabulary="chair,couch,potted plant,bed,toilet,tv,dining table,oven,sink,refrigerator,book,clock,vase,cup,bottle" if is_semantic else ".",
+                custom_vocabulary="eagle",
                 sem_gpu_id=gpu_device_id,
                 verbose=verbose,
                 confidence_threshold=confidence_threshold,

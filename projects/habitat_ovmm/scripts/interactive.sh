@@ -38,6 +38,7 @@ docker run -it --entrypoint /bin/bash \
       -v $(realpath ../../src/home_robot/home_robot/ogn):/home-robot/src/home_robot/home_robot/ogn \
       -v $(realpath ../../src/home_robot/home_robot/perception/constants.py):/home-robot/src/home_robot/home_robot/perception/constants.py \
       -v $(realpath ../../src/home_robot/home_robot/perception/wrapper.py):/home-robot/src/home_robot/home_robot/perception/wrapper.py \
+      -v $(realpath ../../src/home_robot/home_robot/perception/detection/detic/detic_perception.py):/home-robot/src/home_robot/home_robot/perception/detection/detic/detic_perception.py \
       -v $(realpath ../../src/home_robot/home_robot/navigation_policy):/home-robot/src/home_robot/home_robot/navigation_policy \
       -v $(realpath ../../src/home_robot_sim/home_robot_sim/env):/home-robot/src/home_robot_sim/home_robot_sim/env \
       -v $(realpath ../../projects/habitat_ovmm/configs):/home-robot/projects/habitat_ovmm/configs \
@@ -49,5 +50,5 @@ docker run -it --entrypoint /bin/bash \
       --gpus all \
       -e "AGENT_EVALUATION_TYPE=local" \
       -e "BASELINE_CONFIG_PATH=${BASELINE_CONFIG_PATH}" \
-      -e "LOCAL_ARGS='habitat.dataset.split=${SPLIT}'" \
+      -e "LOCAL_ARGS=habitat.dataset.split=${SPLIT}" \
 	${DOCKER_NAME}

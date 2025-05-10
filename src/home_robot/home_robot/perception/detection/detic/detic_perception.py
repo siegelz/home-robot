@@ -126,6 +126,7 @@ class DeticPerception(PerceptionModule):
 
         assert vocabulary in ["coco", "custom"]
         if args.vocabulary == "custom":
+            breakpoint()
             if "__unused" in MetadataCatalog.keys():
                 MetadataCatalog.remove("__unused")
             self.metadata = MetadataCatalog.get("__unused")
@@ -174,7 +175,8 @@ class DeticPerception(PerceptionModule):
         """
         if self.verbose:
             print(f"Resetting vocabulary to {new_vocab}")
-        MetadataCatalog.remove("__unused")
+        if "__unused" in MetadataCatalog.keys():
+            MetadataCatalog.remove("__unused")
         if vocab_type == "custom":
             self.metadata = MetadataCatalog.get("__unused")
             self.metadata.thing_classes = new_vocab
@@ -221,6 +223,7 @@ class DeticPerception(PerceptionModule):
         image = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
         depth = obs.depth
         height, width, _ = image.shape
+        breakpoint()
         pred = self.predictor(image)
         if obs.task_observations is None:
             obs.task_observations = {}
