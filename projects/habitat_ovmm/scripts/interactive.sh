@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 DOCKER_NAME="ovmm_raz_submission"
-SPLIT="minival"
+SPLIT="val_coco10"
 
 while [[ $# -gt 0 ]]
 do
