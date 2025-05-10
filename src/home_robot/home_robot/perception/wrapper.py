@@ -86,13 +86,10 @@ class OvmmPerception:
         """
         Set given vocabulary ID to be the active vocabulary that the segmentation model uses.
         """
-        breakpoint()
+        # breakpoint()
         vocabulary = self._vocabularies[vocabulary_id]
-        # self.segmenter_classes = (
-        #     ["."] + list(vocabulary.goal_id_to_goal_name.values()) + ["other"]
-        # )
         self.segmenter_classes = (
-            [".", "chair", "other"]
+            ["."] + list(vocabulary.goal_id_to_goal_name.values()) + ["other"]
         )
         self._segmentation.reset_vocab(self.segmenter_classes)
 
@@ -119,9 +116,16 @@ class OvmmPerception:
         Process observations. Add pointers to objects and other metadata in segmentation mask.
         """
         # TODO fix bugs: there are mismatches between object/receptacle names and the vocabulary of coco indoor
-        obs.semantic[obs.semantic == 0] = (
-            self._current_vocabulary.num_sem_categories - 1
-        )
+        
+        # Save which pixels are background (semantic ID 0)
+        background_mask = obs.semantic == 0
+        
+        # Decrease all non-background pixel values by 1 to fix the off-by-one error
+        # This maps segmentation model's index 1 (chair) to semantic ID 0
+        obs.semantic[~background_mask] -= 1
+        
+        # Set background pixels to the "other" category (last index)
+        obs.semantic[background_mask] = self._current_vocabulary.num_sem_categories - 1
         obs.task_observations["recep_idx"] = (
             self._current_vocabulary.num_sem_obj_categories + 1
         )
