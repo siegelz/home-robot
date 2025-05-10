@@ -199,7 +199,7 @@ class OpenVocabManipAgent(ObjectNavAgent):
             self.place_agent.reset_vectorized()
         if self.nav_to_rec_agent is not None:
             self.nav_to_rec_agent.reset_vectorized()
-        self.states = torch.tensor([Skill.NAV_TO_OBJ] * self.num_environments)
+        self.states = torch.tensor([Skill.NAV_TO_OBJ] * self.num_environments, device=self.device)
         self.pick_start_step = torch.tensor([0] * self.num_environments)
         self.gaze_at_obj_start_step = torch.tensor([0] * self.num_environments)
         self.place_start_step = torch.tensor([0] * self.num_environments)
