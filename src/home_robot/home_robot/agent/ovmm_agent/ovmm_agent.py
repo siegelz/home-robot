@@ -23,6 +23,34 @@ from home_robot.perception.wrapper import (
     read_category_map_file,
 )
 
+OVMM_TO_COCO_MAPPING = {
+    # Direct matches for objects
+    "book": "book",
+    "bottle": "bottle",
+    "clock": "clock",
+    "cup": "cup",
+    "vase": "vase",
+    
+    # Approximate matches for objects
+    "plant_container": "potted plant",
+    "plant_saucer": "potted plant",
+    "glass": "cup",
+    "jug": "bottle",
+    "spray_bottle": "bottle",
+    
+    # Direct matches for receptacles
+    "chair": "chair",
+    "couch": "couch",
+    "bed": "bed",
+    "toilet": "toilet",
+    "sink": "sink",
+    "table": "dining table",
+    
+    # Approximate matches for receptacles
+    "counter": "dining table",
+    "stool": "chair",
+    "bench": "chair",
+}
 
 class Skill(IntEnum):
     NAV_TO_OBJ = auto()
@@ -573,10 +601,28 @@ class OpenVocabManipAgent(ObjectNavAgent):
             action = DiscreteNavigationAction.STOP
         return action, info, None
 
+    def _ovmm_to_coco(self, obs: Observations):
+        """Convert OVMM object names to COCO object names."""
+        obs.task_observations["object_name"] = OVMM_TO_COCO_MAPPING.get(
+            obs.task_observations["object_name"], obs.task_observations["object_name"]
+        )
+        obs.task_observations["start_recep_name"] = OVMM_TO_COCO_MAPPING.get(
+            obs.task_observations["start_recep_name"],
+            obs.task_observations["start_recep_name"],
+        )
+        obs.task_observations["place_recep_name"] = OVMM_TO_COCO_MAPPING.get(
+            obs.task_observations["place_recep_name"],
+            obs.task_observations["place_recep_name"],
+        )
+
     def act(
         self, obs: Observations
     ) -> Tuple[DiscreteNavigationAction, Dict[str, Any], Observations]:
         """State machine"""
+        if hasattr(self.config.AGENT.SEMANTIC_MAP, "semantic_categories"):
+            if self.config.AGENT.SEMANTIC_MAP.semantic_categories == "coco_indoor":
+                self._ovmm_to_coco(obs)
+
         if self.timesteps[0] == 0:
             self._init_episode(obs)
 
