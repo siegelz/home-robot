@@ -140,6 +140,93 @@ class ObjectNavSemanticExplorationPolicy(ObjectNavFrontierExplorationPolicy):
         # self.extras[:, 1] = self.object_category
         self.extras[:, 1] = self.start_recep_category # we want to be navigating to the start recep, not the object (find where a table is likely to be, not where a cup is likely to be)
 
+    def debug_visualize_global_input(self):
+        """
+        Visualize each channel of self.global_input as a separate binary PNG image.
+        White (255) represents 0 values, black (0) represents >0 values.
+        
+        Uses a class counter to track visualization iterations.
+        
+        Saves images to datadump/debug/{channel_idx}/{counter}.png
+        """
+        import matplotlib.pyplot as plt
+        import os
+        import numpy as np
+        
+        # Initialize visualization counter if it doesn't exist
+        if not hasattr(self.__class__, '_viz_counter'):
+            self.__class__._viz_counter = 0
+        
+        # Get current counter value and increment for next call
+        counter = self.__class__._viz_counter
+        self.__class__._viz_counter += 1
+        
+        # Create main debug directory if it doesn't exist
+        main_debug_dir = os.path.join("datadump", "debug")
+        os.makedirs(main_debug_dir, exist_ok=True)
+        
+        # Channel descriptions
+        channel_descriptions = {
+            # Local map channels (0-3)
+            0: "Local Map - Obstacle Map",
+            1: "Local Map - Explored Area",
+            2: "Local Map - Current Position",
+            3: "Local Map - Past Positions",
+            
+            # Global map channels (4-7)
+            4: "Global Map - Obstacle Map",
+            5: "Global Map - Explored Area",
+            6: "Global Map - Current Position",
+            7: "Global Map - Past Positions",
+        }
+        
+        # Semantic channels (8+)
+        for i in range(8, self.ngc):
+            channel_descriptions[i] = f"Semantic Category {i-8}"
+        
+        # Get the number of channels
+        num_channels = self.global_input.shape[1]
+        
+        # Create a figure for each channel
+        for i in range(num_channels):
+            # Create channel-specific directory
+            channel_dir = os.path.join(main_debug_dir, f"{i:02d}")
+            os.makedirs(channel_dir, exist_ok=True)
+            
+            # Get the channel data and convert to numpy
+            channel_data = self.global_input[0, i, :, :].detach().cpu().numpy()
+            
+            # Create binary image: white (1) for 0 values, black (0) for >0 values
+            binary_data = np.where(channel_data > 0, 0, 1)  # Invert for white=0, black=positive
+            
+            # Create a new figure
+            plt.figure(figsize=(8, 8))
+            
+            # Plot the binary data with a binary colormap (white and black)
+            plt.imshow(binary_data, cmap='binary', vmin=0, vmax=1)
+            
+            # Count non-zero elements in the original data
+            nonzero = np.sum(channel_data > 0)
+            
+            # Get channel description
+            description = channel_descriptions.get(i, f"Channel {i}")
+            
+            # Add title with channel info
+            if nonzero > 0:
+                plt.title(f"{description}\nNon-zero pixels: {nonzero}")
+            else:
+                plt.title(f"{description}\nEmpty (All zeros)")
+            
+            # Remove axis ticks for cleaner visualization
+            plt.axis('off')
+            
+            # Save the figure with just the counter as the filename
+            filename = os.path.join(channel_dir, f"{counter:04d}.png")
+            plt.savefig(filename, bbox_inches='tight', dpi=150)
+            plt.close()
+        
+        print(f"Saved {num_channels} binary channel visualizations to {main_debug_dir}/ (iteration {counter})")
+
     def explore_otherwise(self, map_features, goal_map, found_goal):
         """
         Override to use semantic information to guide exploration when the object goal
@@ -160,6 +247,10 @@ class ObjectNavSemanticExplorationPolicy(ObjectNavFrontierExplorationPolicy):
 
         # Run Global Policy (global_goals = Long-Term Goal)
         self._calculate_extras()
+        
+        # Visualize the global input channels before running the policy
+        self.debug_visualize_global_input()
+        
         g_value, g_action, g_action_log_prob, self.g_rec_states = \
             self.g_policy.act(
                 self.global_input, 
