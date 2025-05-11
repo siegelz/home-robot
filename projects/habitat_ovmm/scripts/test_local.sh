@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 DOCKER_NAME="ovmm_baseline_submission"
-SPLIT="val_coco10"
+SPLIT="val_coco30"
 BASELINE_CONFIG_PATH="projects/habitat_ovmm/configs/agent/heuristic_agent.yaml"
 
 while [[ $# -gt 0 ]]
